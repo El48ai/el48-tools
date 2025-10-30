@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EL48 — Photo Enhancer</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    :root{ --bg1:#0b0d10; --bg2:#101722; --panel:#0f1621; --text:#f1f6ff; --muted:#a4b3c6; --border:rgba(255,255,255,.12); --brand:#e60012; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 14px 40px}
+    a{color:#fff}
+    header{display:flex;align-items:center;gap:10px}
+    .logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),#b8000e);font-weight:800}
+    .panel{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,#101827ee,#0e1520ee);padding:12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:280px}
+    .drop{display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:14px;height:170px;background:#0e1420;color:#cfe0f2;text-align:center;padding:10px;cursor:pointer}
+    .drop input{display:none}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.02))}
+    .card h3{margin:0 0 6px 0;font-size:14px;color:#e9f1fb}
+    .btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;transition:.2s}
+    .btn.primary{background:#fff;color:#0b0d10}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:#f1f6ff}
+    select{background:#0f1a2a;color:#f1f6ff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-weight:700}
+    .slider{width:100%}
+    .preview{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b0d10}
+    .preview header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:#cfe0f2}
+    canvas{display:block;width:100%;height:auto;background:#0b0d10}
+    footer{margin-top:16px;text-align:center;color:#9db0c7;font-size:12px}
+    .back{margin-top:8px;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">EL48</div>
+      <div>
+        <h1 style="margin:0">Photo Enhancer</h1>
+        <div style="color:#a4b3c6;font-size:13px;margin-top:2px">Rasio, preset sosial, pad blur, dan enhance ringan. 100% di browser.</div>
+        <a href="index.html" class="back">← Kembali ke Landing</a>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="row">
+        <div class="col">
+          <label class="drop" id="drop">
+            <input id="file" type="file" accept="image/*">
+            <div><strong>Ketuk untuk pilih</strong> atau tarik foto ke sini (JPG/PNG).</div>
+          </label>
+
+          <div class="grid">
+            <div class="card">
+              <h3>Rasio & Mode</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <select id="ratio">
+                  <option value="orig">Original</option>
+                  <option value="1:1">1:1 (Square)</option>
+                  <option value="4:5">4:5 (Instagram)</option>
+                  <option value="3:4">3:4 (Portrait)</option>
+                  <option value="9:16">9:16 (Story/Reels)</option>
+                  <option value="16:9">16:9 (Landscape)</option>
+                </select>
+                <select id="mode">
+                  <option value="fill">Isi (Crop)</option>
+                  <option value="fit">Pas (Pad)</option>
+                </select>
+              </div>
+              <label style="font-size:12px;color:#cfe0f2">Pad Blur <input id="padBlur" type="range" min="0" max="20" value="8" class="slider"></label>
+            </div>
+
+            <div class="card">
+              <h3>Ukuran & Posisi</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <select id="outWidth">
+                  <option value="720">Lebar 720</option>
+                  <option value="1080" selected>Lebar 1080</option>
+                  <option value="1440">Lebar 1440</option>
+                  <option value="2160">Lebar 2160</option>
+                </select>
+                <button id="half" class="btn ghost">½x</button>
+                <button id="double" class="btn ghost">2x</button>
+              </div>
+              <label class="muted">Offset X <input id="offX" type="range" min="-100" max="100" value="0" class="slider"></label>
+              <label class="muted">Offset Y <input id="offY" type="range" min="-100" max="100" value="0" class="slider"></label>
+            </div>
+
+            <div class="card">
+              <h3>Preset Cepat</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn ghost" id="pIGPortrait">IG 1080×1350</button>
+                <button class="btn ghost" id="pIGStory">Story 1080×1920</button>
+                <button class="btn ghost" id="pSquare">Square 1080</button>
+                <button class="btn ghost" id="pYTThumb">YT 1280×720</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Enhance</h3>
+              <label class="muted">Auto-Enhance <input id="autoEnh" type="checkbox" checked></label>
+              <label class="muted">Ketajaman <input id="sharpen" type="range" min="0" max="120" value="45" class="slider"></label>
+              <label class="muted">Kecerahan <input id="bright" type="range" min="-40" max="40" value="2" class="slider"></label>
+              <label class="muted">Kontras <input id="contrast" type="range" min="-40" max="50" value="10" class="slider"></label>
+              <label class="muted">Saturasi <input id="sat" type="range" min="-40" max="50" value="8" class="slider"></label>
+            </div>
+
+            <div class="card">
+              <h3>Aksi</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="process" class="btn primary" style="flex:1">Proses</button>
+                <button id="downloadJpg" class="btn ghost" style="flex:1">Download JPG</button>
+                <button id="downloadPng" class="btn ghost" style="flex:1">Download PNG</button>
+                <button id="save4k" class="btn primary" style="flex:1">Simpan 4K</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="preview">
+            <header><span>Pratinjau</span><span id="info"></span></header>
+            <canvas id="cv"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>© 2025 EL48 AI — Semua proses lokal di perangkat kamu.</footer>
+  </div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const file = $('#file'), drop = $('#drop'), cv = $('#cv'), info = $('#info');
+  const ratioEl = $('#ratio'), modeEl = $('#mode'), padBlurEl = $('#padBlur');
+  const outWidthEl = $('#outWidth'), half = $('#half'), doubleBtn = $('#double');
+  const offXEl = $('#offX'), offYEl = $('#offY');
+  const autoEnh = $('#autoEnh'), sharpEl = $('#sharpen'), brightEl = $('#bright'), contrastEl = $('#contrast'), satEl = $('#sat');
+  const processBtn = $('#process'), dJpg = $('#downloadJpg'), dPng = $('#downloadPng'), save4k = $('#save4k');
+  const pIGPortrait=$('#pIGPortrait'), pIGStory=$('#pIGStory'), pSquare=$('#pSquare'), pYTThumb=$('#pYTThumb');
+  let img = null;
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function parseRatio(val, w, h){ if(val==='orig') return w/h; const [a,b] = val.split(':').map(Number); return a/b; }
+
+  function loadFile(fileObj){
+    const url = URL.createObjectURL(fileObj);
+    const im = new Image();
+    im.onload = ()=>{ img = im; URL.revokeObjectURL(url); draw(); };
+    im.src = url;
+  }
+
+  function boxBlur(src, w, h, passes=1){
+    let data = src;
+    for(let p=0;p<passes;p++){
+      const dst = new Uint8ClampedArray(data.length);
+      const idx = (x,y)=> (y*w + x)*4;
+      for(let y=0;y<h;y++){
+        for(let x=0;x<w;x++){
+          let r=0,g=0,b=0,a=0,c=0;
+          for(let j=-1;j<=1;j++){
+            const yy = Math.max(0, Math.min(h-1, y+j));
+            for(let i=-1;i<=1;i++){
+              const xx = Math.max(0, Math.min(w-1, x+i));
+              const p = idx(xx,yy);
+              r+=data[p]; g+=data[p+1]; b+=data[p+2]; a+=data[p+3]; c++;
+            }
+          }
+          const q = idx(x,y);
+          dst[q]=r/c; dst[q+1]=g/c; dst[q+2]=b/c; dst[q+3]=a/c;
+        }
+      }
+      data = dst;
+    }
+    return data;
+  }
+  function unsharpMask(src, w, h, amt){
+    if(amt<=0) return src;
+    const blur = boxBlur(src, w, h, 1);
+    const out = new Uint8ClampedArray(src.length);
+    const k = amt/100;
+    for(let i=0;i<src.length;i+=4){
+      out[i]   = clamp(src[i]   + (src[i]-blur[i])     * k, 0, 255);
+      out[i+1] = clamp(src[i+1] + (src[i+1]-blur[i+1]) * k, 0, 255);
+      out[i+2] = clamp(src[i+2] + (src[i+2]-blur[i+2]) * k, 0, 255);
+      out[i+3] = src[i+3];
+    }
+    return out;
+  }
+  function detailBoost(src, w, h, strength=0.26){
+    const blur = boxBlur(src, w, h, 2);
+    const out = new Uint8ClampedArray(src.length);
+    for(let i=0;i<src.length;i+=4){
+      const hr = src[i]-blur[i];
+      const hg = src[i+1]-blur[i+1];
+      const hb = src[i+2]-blur[i+2];
+      out[i]   = clamp(src[i]   + hr*strength, 0, 255);
+      out[i+1] = clamp(src[i+1] + hg*strength, 0, 255);
+      out[i+2] = clamp(src[i+2] + hb*strength, 0, 255);
+      out[i+3] = src[i+3];
+    }
+    return out;
+  }
+  function colorAdjust(src, w, h, bright, contrast, sat){
+    const out = new Uint8ClampedArray(src.length);
+    const b = bright/100 * 255 * 0.6;
+    const c = (contrast>=0) ? (1 + contrast/100) : (1 + contrast/200);
+    const s = 1 + (sat/100);
+    for(let i=0;i<src.length;i+=4){
+      let r = (src[i]-128)*c + 128 + b;
+      let g = (src[i+1]-128)*c + 128 + b;
+      let bl= (src[i+2]-128)*c + 128 + b;
+      const avg = (r+g+bl)/3;
+      r = clamp(avg + (r-avg)*s, 0, 255);
+      g = clamp(avg + (g-avg)*s, 0, 255);
+      bl= clamp(avg + (bl-avg)*s, 0, 255);
+      out[i]=r; out[i+1]=g; out[i+2]=bl; out[i+3]=src[i+3];
+    }
+    return out;
+  }
+
+  function processToCanvas(outW, outH){
+    const src = document.createElement('canvas');
+    src.width = img.naturalWidth; src.height = img.naturalHeight;
+    const sctx = src.getContext('2d');
+    sctx.imageSmoothingEnabled = true; sctx.imageSmoothingQuality = 'high';
+    sctx.drawImage(img, 0, 0);
+
+    const d = document.createElement('canvas');
+    d.width = outW; d.height = outH;
+    const dctx = d.getContext('2d');
+    dctx.imageSmoothingEnabled = true; dctx.imageSmoothingQuality = 'high';
+
+    const srcW = src.width, srcH = src.height;
+    const srcRatio = srcW/srcH;
+    const r = outW/outH;
+    const offX = parseInt(offXEl.value,10)/100;
+    const offY = parseInt(offYEl.value,10)/100;
+
+    if(document.getElementById('mode').value==='fill'){
+      const scale = (srcRatio < r) ? (outW/srcW) : (outH/srcH);
+      const drawW = srcW * scale;
+      const drawH = srcH * scale;
+      const maxOffX = Math.max(0, (drawW - outW)/2);
+      const maxOffY = Math.max(0, (drawH - outH)/2);
+      const dx = -maxOffX * offX;
+      const dy = -maxOffY * offY;
+      dctx.drawImage(src, dx, dy, drawW, drawH);
+    }else{
+      const scale = (srcRatio > r) ? (outW/srcW) : (outH/srcH);
+      const drawW = srcW * scale;
+      const drawH = srcH * scale;
+      const padX = (outW - drawW)/2, padY = (outH - drawH)/2;
+
+      const bgScale = Math.max(outW/srcW, outH/srcH) * 1.02;
+      const bgW = srcW * bgScale, bgH = srcH * bgScale;
+      const bgCan = document.createElement('canvas');
+      bgCan.width = outW; bgCan.height = outH;
+      const bgCtx = bgCan.getContext('2d');
+      bgCtx.imageSmoothingEnabled = true; bgCtx.imageSmoothingQuality = 'high';
+      bgCtx.drawImage(src, (outW-bgW)/2, (outH-bgH)/2, bgW, bgH);
+      const bgData = bgCtx.getImageData(0,0,outW,outH);
+      const passes = Math.round(parseInt(padBlurEl.value,10)/4);
+      const blurred = passes>0 ? boxBlur(bgData.data, outW, outH, passes) : bgData.data;
+      bgCtx.putImageData(new ImageData(blurred, outW, outH), 0, 0);
+      dctx.drawImage(bgCan, 0, 0);
+
+      const dx = padX + padX*offX;
+      const dy = padY + padY*offY;
+      dctx.drawImage(src, dx, dy, drawW, drawH);
+    }
+
+    const imgData = dctx.getImageData(0,0,outW,outH);
+    let data = imgData.data;
+    if(autoEnh.checked){
+      data = detailBoost(data, outW, outH, 0.26);
+      data = colorAdjust(data, outW, outH, 3, 8, 6);
+    }
+    data = unsharpMask(data, outW, outH, parseInt(sharpEl.value,10));
+    data = colorAdjust(data, outW, outH, parseInt(brightEl.value,10), parseInt(contrastEl.value,10), parseInt(satEl.value,10));
+    dctx.putImageData(new ImageData(data, outW, outH), 0, 0);
+    return d;
+  }
+
+  function draw(){
+    if(!img){ info.textContent=''; return; }
+    const srcW = img.naturalWidth, srcH = img.naturalHeight;
+    const r = parseRatio(ratioEl.value, srcW, srcH);
+    const outW = parseInt(outWidthEl.value,10);
+    const outH = Math.round(outW / r);
+    const outCanvas = processToCanvas(outW, outH);
+    cv.width = outCanvas.width; cv.height = outCanvas.height;
+    const cctx = cv.getContext('2d'); cctx.imageSmoothingEnabled = true; cctx.imageSmoothingQuality='high';
+    cctx.drawImage(outCanvas, 0, 0);
+    info.textContent = `${srcW}×${srcH} → ${cv.width}×${cv.height} (${ratioEl.value})`;
+  }
+
+  function download(type, force4k=false){
+    if(!img){ alert('Pilih foto dulu.'); return; }
+    let outW = parseInt(outWidthEl.value,10);
+    const r = parseRatio(ratioEl.value, img.naturalWidth, img.naturalHeight);
+    if(force4k){ outW = 2160; }
+    const outH = Math.round(outW / r);
+    const outCanvas = processToCanvas(outW, outH);
+    const a = document.createElement('a');
+    if(type==='png'){ a.href = outCanvas.toDataURL('image/png'); a.download = 'EL48-enhanced.png'; }
+    else { a.href = outCanvas.toDataURL('image/jpeg', 0.95); a.download = 'EL48-enhanced.jpg'; }
+    a.click();
+  }
+
+  // Events
+  document.getElementById('drop').addEventListener('click', ()=> file.click());
+  document.getElementById('drop').addEventListener('dragover', e=>{ e.preventDefault(); });
+  document.getElementById('drop').addEventListener('drop', e=>{ e.preventDefault(); const f=e.dataTransfer.files?.[0]; if(f) loadFile(f); });
+  file.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) loadFile(f); });
+
+  [ratioEl, modeEl, padBlurEl, outWidthEl, offXEl, offYEl, autoEnh, sharpEl, brightEl, contrastEl, satEl].forEach(el=> el.addEventListener('input', ()=>{ if(img) draw(); }));
+  processBtn.addEventListener('click', draw);
+  dJpg.addEventListener('click', ()=> download('jpg'));
+  dPng.addEventListener('click', ()=> download('png'));
+  save4k.addEventListener('click', ()=> download('jpg', true));
+  half.addEventListener('click', ()=>{ outWidthEl.value = Math.max(360, Math.floor(parseInt(outWidthEl.value,10)/2)); draw(); });
+  doubleBtn.addEventListener('click', ()=>{ outWidthEl.value = Math.min(4096, parseInt(outWidthEl.value,10)*2); draw(); });
+
+  // Presets sosial
+  function setPreset(width, ratio, mode='fill'){ outWidthEl.value = String(width); ratioEl.value = ratio; modeEl.value = mode; draw(); }
+  pIGPortrait.addEventListener('click', ()=> setPreset(1080, '4:5', 'fill'));
+  pIGStory.addEventListener('click',   ()=> setPreset(1080, '9:16', 'fill'));
+  pSquare.addEventListener('click',    ()=> setPreset(1080, '1:1', 'fill'));
+  pYTThumb.addEventListener('click',   ()=> setPreset(1280, '16:9', 'fill'));
+})();
+</script>
+</body>
+</html>

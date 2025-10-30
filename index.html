@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EL48 Tools — Kompres & Enhancer</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --bg1:#0b0d10; --bg2:#101722; --brand:#e60012; --brand2:#b8000e; --text:#f2f6fb; --muted:#a4b3c6; --border:rgba(255,255,255,.14); }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:radial-gradient(1000px 500px at 80% -20%,#1b2332,#0b0d10) no-repeat,color-mix(in oklab,#0b0d10,#101722);color:var(--text)}
+    .wrap{max-width:1080px;margin:0 auto;padding:28px 14px 48px}
+    header{display:flex;align-items:center;gap:14px}
+    .logo{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 12px 36px rgba(230,0,18,.35);font-weight:800;color:#fff}
+    h1{margin:0;font-size:clamp(28px,4.5vw,44px)}
+    .lead{margin:4px 0 0;color:var(--muted);font-size:14px}
+    .panel{margin-top:18px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,#0f1621ee,#0e1520ee);padding:18px}
+    .cta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+    .btn{display:flex;align-items:center;justify-content:center;gap:10px;border:none;border-radius:16px;padding:18px 20px;font-weight:800;cursor:pointer;text-decoration:none}
+    .btn.primary{background:#fff;color:#0b0d10}
+    .btn.secondary{background:#0f1a2a;border:1px solid var(--border);color:#f2f6fb}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.25)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+    .card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0b0d10}
+    .card header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:#cfe0f2}
+    .card .body{padding:12px}
+    .before-after{display:grid;grid-template-columns:1fr 1fr}
+    .ba{position:relative}
+    .ba img{width:100%;height:auto;display:block}
+    .tag{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,var(--brand),var(--brand2));padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    footer{margin-top:16px;text-align:center;color:#9db0c7;font-size:12px}
+    @media (max-width:900px){ .cta,.grid2{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">EL48</div>
+      <div>
+        <h1>EL48 Tools</h1>
+        <div class="lead">Kumpulan alat ringan untuk kreator: kompres ukuran & tingkatkan kualitas foto langsung di browser.</div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="cta">
+        <a class="btn primary" href="compress.html">📦 Buka Kompres Foto</a>
+        <a class="btn secondary" href="enhance.html">✨ Buka Photo Enhancer</a>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <header><span>Contoh — Kompres</span><span>Ukuran turun • kualitas tetap</span></header>
+          <div class="before-after">
+            <div class="ba"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200" alt="before"><div class="tag">Before</div></div>
+            <div class="ba"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=50&w=700" alt="after"><div class="tag">After</div></div>
+          </div>
+          <div class="body">Hasil kompres tetap tajam untuk sosial media. Tanpa install, tanpa watermark.</div>
+        </div>
+
+        <div class="card">
+          <header><span>Contoh — Enhance</span><span>Detail naik • warna seimbang</span></header>
+          <div class="before-after">
+            <div class="ba"><img src="https://images.unsplash.com/photo-1520763185298-1b434c919102?q=60&w=800" alt="before"><div class="tag">Before</div></div>
+            <div class="ba"><img src="https://images.unsplash.com/photo-1520763185298-1b434c919102?q=80&w=1200" alt="after"><div class="tag">After</div></div>
+          </div>
+          <div class="body">Tersedia rasio 1:1, 4:5, 9:16, dan preset sosial. Simpan 4K sekali klik.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>© 2025 EL48 AI — Semua proses terjadi di perangkat kamu. Patuhi hak cipta.</footer>
+  </div>
+</body>
+</html>

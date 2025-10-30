@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EL48 — Kompres Foto</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    :root{ --bg1:#0b0d10; --bg2:#101722; --panel:#0f1621; --text:#f1f6ff; --muted:#a4b3c6; --border:rgba(255,255,255,.12); --brand:#e60012; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 14px 40px}
+    a{color:#fff}
+    header{display:flex;align-items:center;gap:10px}
+    .logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),#b8000e);font-weight:800}
+    .panel{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,#101827ee,#0e1520ee);padding:12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:280px}
+    .drop{display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:14px;height:170px;background:#0e1420;color:#cfe0f2;text-align:center;padding:10px;cursor:pointer}
+    .drop input{display:none}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.02))}
+    .card h3{margin:0 0 6px 0;font-size:14px;color:#e9f1fb}
+    .btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;transition:.2s}
+    .btn.primary{background:#fff;color:#0b0d10}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:#f1f6ff}
+    .preview{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b0d10}
+    .preview header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:#cfe0f2}
+    canvas{display:block;width:100%;height:auto;background:#0b0d10}
+    footer{margin-top:16px;text-align:center;color:#9db0c7;font-size:12px}
+    .back{margin-top:8px;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">EL48</div>
+      <div>
+        <h1 style="margin:0">Kompres Foto</h1>
+        <div style="color:#a4b3c6;font-size:13px;margin-top:2px">Perkecil ukuran, jaga kualitas. 100% di browser.</div>
+        <a href="index.html" class="back">← Kembali ke Landing</a>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="row">
+        <div class="col">
+          <label class="drop" id="dropC">
+            <input id="fileC" type="file" accept="image/*">
+            <div><strong>Ketuk untuk pilih</strong> atau tarik foto ke sini (JPG/PNG).</div>
+          </label>
+
+          <div class="grid">
+            <div class="card">
+              <h3>Target</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <select id="targetMode">
+                  <option value="quality" selected>Kualitas (%)</option>
+                  <option value="size">Ukuran target (KB/MB)</option>
+                </select>
+                <input id="quality" type="range" min="40" max="95" value="85" class="slider" style="flex:1">
+              </div>
+              <div id="sizeBox" style="display:none;gap:6px;align-items:center;margin-top:6px">
+                <input id="sizeVal" type="number" min="50" value="500" style="width:120px;border-radius:8px;padding:8px;border:1px solid var(--border);background:#0f1a2a;color:#fff">
+                <select id="sizeUnit">
+                  <option value="KB" selected>KB</option>
+                  <option value="MB">MB</option>
+                </select>
+                <span style="font-size:12px;color:#cfe0f2">Contoh: 500 KB atau 1 MB</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Resize (Opsional)</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <select id="resizePreset">
+                  <option value="none" selected>Tanpa resize</option>
+                  <option value="1080">Lebar maks 1080</option>
+                  <option value="1440">Lebar maks 1440</option>
+                  <option value="2160">Lebar maks 2160</option>
+                </select>
+                <label style="font-size:12px;color:#cfe0f2">PNG dikonversi ke JPG agar lebih kecil.</label>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Aksi</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="processC" class="btn primary" style="flex:1">Kompres</button>
+                <button id="downloadCJpg" class="btn ghost" style="flex:1">Download JPG</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="preview">
+            <header><span>Pratinjau</span><span id="infoC"></span></header>
+            <canvas id="cvC"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>© 2025 EL48 AI — Semua proses lokal di perangkat kamu.</footer>
+  </div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const fileC = $('#fileC'), dropC = $('#dropC'), cvC = $('#cvC'), infoC = $('#infoC');
+  const targetMode = $('#targetMode'), quality = $('#quality');
+  const sizeBox = $('#sizeBox'), sizeVal = $('#sizeVal'), sizeUnit = $('#sizeUnit');
+  const resizePreset = $('#resizePreset'); const processC = $('#processC'), downloadCJpg = $('#downloadCJpg');
+  let imgC = null, outC = null;
+
+  targetMode.addEventListener('change', ()=>{
+    if(targetMode.value==='size'){ sizeBox.style.display='flex'; quality.disabled = true; }
+    else { sizeBox.style.display='none'; quality.disabled = false; }
+  });
+
+  function loadFileC(file){
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = ()=>{ imgC = im; URL.revokeObjectURL(url); drawC(); };
+    im.src = url;
+  }
+
+  function drawC(){
+    if(!imgC){ infoC.textContent=''; return; }
+    const srcW = imgC.naturalWidth, srcH = imgC.naturalHeight;
+    let targetW = srcW, targetH = srcH;
+    const maxW = parseInt(resizePreset.value,10);
+    if(!isNaN(maxW) && maxW>0 && srcW>maxW){
+      targetW = maxW; targetH = Math.round(srcH * (maxW/srcW));
+    }
+    const tmp = document.createElement('canvas'); tmp.width = targetW; tmp.height = targetH;
+    const tctx = tmp.getContext('2d'); tctx.imageSmoothingEnabled=true; tctx.imageSmoothingQuality='high';
+    tctx.drawImage(imgC, 0, 0, targetW, targetH);
+
+    let q = (parseInt(quality.value,10)||85)/100;
+    let dataUrl = tmp.toDataURL('image/jpeg', q);
+    if(targetMode.value==='size'){
+      const bytesTarget = (parseInt(sizeVal.value,10)||500) * (sizeUnit.value==='MB' ? 1024*1024 : 1024);
+      let lower=0.4, upper=0.95; q = Math.min(Math.max(q, lower), upper);
+      for(let i=0;i<8;i++){
+        dataUrl = tmp.toDataURL('image/jpeg', q);
+        const curBytes = Math.ceil((dataUrl.length - 'data:image/jpeg;base64,'.length) * 3/4);
+        if(curBytes>bytesTarget) { upper = q; q = (lower+q)/2; }
+        else { lower = q; q = (q+upper)/2; }
+      }
+    }
+
+    outC = new Image(); outC.onload = ()=>{
+      cvC.width = outC.naturalWidth; cvC.height = outC.naturalHeight;
+      const cctx = cvC.getContext('2d'); cctx.imageSmoothingEnabled=true; cctx.imageSmoothingQuality='high';
+      cctx.drawImage(outC, 0, 0);
+      const sizeKB = Math.ceil((dataUrl.length - 'data:image/jpeg;base64,'.length) * 3/4 / 1024);
+      infoC.textContent = `${srcW}×${srcH} → ${cvC.width}×${cvC.height} • ~${sizeKB} KB`;
+    }; outC.src = dataUrl;
+  }
+
+  dropC.addEventListener('click', ()=> fileC.click());
+  dropC.addEventListener('dragover', e=>{ e.preventDefault(); });
+  dropC.addEventListener('drop', e=>{ e.preventDefault(); const f=e.dataTransfer.files?.[0]; if(f) loadFileC(f); });
+  fileC.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) loadFileC(f); });
+
+  [targetMode, quality, sizeVal, sizeUnit, resizePreset].forEach(el=> el.addEventListener('input', ()=>{ if(imgC) drawC(); }));
+  processC.addEventListener('click', drawC);
+  downloadCJpg.addEventListener('click', ()=>{
+    if(!cvC.width){ alert('Belum ada hasil. Tekan Kompres.'); return; }
+    const a = document.createElement('a');
+    a.href = cvC.toDataURL('image/jpeg', 0.95);
+    a.download = 'EL48-compressed.jpg';
+    a.click();
+  });
+})();
+</script>
+</body>
+</html>
