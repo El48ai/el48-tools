@@ -1,463 +1,921 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Prototype — Bebek vs Zombi (Tower Defense)</title>
-<style>
-  :root{--bg:#eef8ff;--panel:#ffffff;--accent:#0f172a;--tile:#d8f0c6}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#0f172a}
-  body{display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px}
-  .wrap{width:95vw;max-width:980px}
-  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-  .title{font-weight:800;font-size:18px}
-  .toolbar{display:flex;gap:8px;align-items:center}
-  .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
-  .hud{display:flex;gap:12px;align-items:center;font-weight:700}
-  #gameArea{background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:0 8px 20px rgba(2,6,23,0.08);position:relative}
-  canvas{display:block;width:100%;height:auto;background:linear-gradient(#cfefff,#eaf9ff)}
-  #panelBottom{display:flex;gap:10px;align-items:center;padding:8px;justify-content:space-between}
-  .unitCard{width:88px;height:96px;background:linear-gradient(180deg,#fff,#f4fff0);border-radius:8px;border:1px solid rgba(0,0,0,0.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer}
-  .unitCard.locked{opacity:0.5}
-  .unitCost{font-weight:800;font-size:14px;color:#0f172a}
-  .resource{background:#fff;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);font-weight:800}
-  #message{font-size:13px;color:#334155}
-  /* grid hint */
-  .overlayStart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(2,6,23,0.6);color:#fff;font-weight:700;z-index:20}
-  .small{font-size:13px;color:#334155}
-  @media (max-width:420px){
-    .unitCard{width:72px;height:84px}
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦆 Bebek Manyun vs Zombi 🧟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameWrapper {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 70vh;
+            max-height: 600px;
+            display: block;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 50%, #90EE90 100%);
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .ui-panel {
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 3px solid #FFD700;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .ui-panel div {
+            margin: 5px 0;
+        }
+
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+        }
+
+        #menu.hidden {
+            display: none;
+        }
+
+        #menu h1 {
+            font-size: 4em;
+            margin-bottom: 30px;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.8);
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #menu p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 90%;
+            line-height: 1.6;
+        }
+
+        #startBtn, #restartBtn {
+            padding: 20px 60px;
+            font-size: 1.8em;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(255,215,0,0.4);
+            font-weight: bold;
+        }
+
+        #startBtn:hover, #restartBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(255,215,0,0.6);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+        }
+
+        #gameOver h2 {
+            font-size: 4em;
+            margin-bottom: 30px;
+            color: #ff4444;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.8);
+        }
+
+        #finalScore {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: #FFD700;
+        }
+
+        #mobileControls {
+            display: none;
+            justify-content: space-between;
+            padding: 20px;
+            gap: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+        }
+
+        .controlBtn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,215,0,0.3);
+            border: 4px solid #FFD700;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            color: white;
+            user-select: none;
+            touch-action: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+
+        .controlBtn:active {
+            transform: scale(0.9);
+            background: rgba(255,215,0,0.6);
+        }
+
+        .controlGroup {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        #jumpBtn {
+            width: 90px;
+            height: 90px;
+            background: rgba(0,255,0,0.3);
+            border-color: #00ff00;
+            font-size: 2em;
+        }
+
+        #shootBtn {
+            width: 90px;
+            height: 90px;
+            background: rgba(255,0,0,0.3);
+            border-color: #ff0000;
+        }
+
+        .controls-info {
+            font-size: 1.1em;
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+            }
+            #menu h1 {
+                font-size: 2.5em;
+            }
+            #menu p {
+                font-size: 1em;
+            }
+            .ui-panel {
+                font-size: 16px;
+                padding: 10px 15px;
+            }
+            #gameCanvas {
+                height: 50vh;
+            }
+        }
+
+        #hpBar {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 250px;
+            height: 30px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 15px;
+            border: 3px solid #FFD700;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #hpFill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff6b6b, #ffaa00);
+            transition: width 0.3s;
+            width: 100%;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .pause-text {
+            text-align: center;
+            font-size: 0.5em;
+            color: rgba(255,255,255,0.6);
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="title">🥀 Bebek Manyun — Tower Defense (Prototype)</div>
-      <div class="toolbar">
-        <div class="hud">
-          <div class="resource">Biji: <span id="seedCount">50</span></div>
-          <div class="resource">Wave: <span id="waveNum">0</span></div>
-        </div>
-        <button id="muteBtn" class="btn" style="margin-left:8px">🔊</button>
-      </div>
-    </header>
+    <div id="gameWrapper">
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="1200" height="600"></canvas>
+            
+            <div id="ui">
+                <div class="ui-panel">
+                    <div>🏆 Skor: <span id="score">0</span></div>
+                    <div>🌊 Wave: <span id="wave">1</span></div>
+                </div>
+                <div class="ui-panel">
+                    <div>❤️ HP: <span id="hp">100</span></div>
+                    <div>🎯 Tembak: Space</div>
+                </div>
+            </div>
 
-    <div id="gameArea">
-      <canvas id="gameCanvas" width="900" height="540"></canvas>
-      <div id="overlayStart" class="overlayStart" style="display:flex">
-        <div style="font-size:20px">🦆 Bebek vs Zombi — Prototype</div>
-        <div class="small">Klik unit di bawah lalu klik ubin untuk menanam. Tekan "Start Wave".</div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="startWaveBtn" class="btn">▶ Mulai Wave</button>
-          <button id="resetBtn" class="btn" style="background:#374151">Reset</button>
+            <div id="hpBar">
+                <div id="hpFill"></div>
+            </div>
+
+            <div id="menu">
+                <h1>🦆 Bebek Manyun vs Zombi 🧟</h1>
+                <p class="controls-info">
+                    <strong>🎮 Kontrol Desktop:</strong><br>
+                    ← → atau A D untuk bergerak | ↑ atau W untuk lompat (2x untuk double jump)<br>
+                    <strong>Space</strong> untuk menembak | <strong>ESC</strong> untuk pause
+                </p>
+                <button id="startBtn">🎮 Mulai Bermain</button>
+                <p class="pause-text">Bertahan selama mungkin melawan zombie!</p>
+            </div>
+
+            <div id="gameOver">
+                <h2>💀 Game Over!</h2>
+                <div id="finalScore">Skor Akhir: 0</div>
+                <button id="restartBtn">🔄 Main Lagi</button>
+            </div>
         </div>
-      </div>
+
+        <div id="mobileControls">
+            <div class="controlGroup">
+                <div class="controlBtn" id="leftBtn">◀</div>
+                <div class="controlBtn" id="rightBtn">▶</div>
+            </div>
+            <div class="controlGroup">
+                <div class="controlBtn" id="jumpBtn">⬆</div>
+                <div class="controlBtn" id="shootBtn">🔫</div>
+            </div>
+        </div>
     </div>
 
-    <div id="panelBottom">
-      <div style="display:flex;gap:8px;align-items:center">
-        <div id="unitBar" style="display:flex;gap:8px">
-          <!-- unit cards injected by JS -->
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end">
-        <div id="message">Status: Siap</div>
-        <div class="small">Prototype: grid 5 baris × 9 kolom</div>
-      </div>
-    </div>
-  </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Audio System
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let audioEnabled = false;
 
-<script>
-/* ====== PROTOTYPE: Bebek TD ======
-   Includes:
-   - Grid (5×9)
-   - 3 unit types (Shooter, Tank, Slow)
-   - Enemies spawn per wave moving left
-   - Sprite-sheet via embedded SVG data-URI (duck & zombie)
-   - Simple UI: buy units, start wave, reset
-   - Sound via WebAudio (simple sfx)
-*/
-
-// ---------- SPRITES (data-URI SVG) ----------
-// Duck sprite: 6 frames (idle+run+jump+fire). Frame size 96x96.
-const DUCK_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
-`<svg xmlns="http://www.w3.org/2000/svg" width="576" height="96" viewBox="0 0 576 96">
-  <!-- 6 frames, each 96x96 horizontally -->
-  ${[0,1,2,3,4,5].map(i => {
-    const offset = i*96;
-    const wing = [0,-6,-10,-6,0,4][i];
-    return `<g transform="translate(${offset},0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-      <ellipse cx="48" cy="52" rx="28" ry="20" fill="#ffd85a" />
-      <ellipse cx="32" cy="${26+wing}" rx="12" ry="8" fill="#ffcf36"/>
-      <circle cx="36" cy="28" r="6" fill="#fff"/>
-      <circle cx="36" cy="28" r="3" fill="#052022"/>
-      <path d="M30 42 Q40 50 50 42" stroke="#5b3a00" stroke-width="2" fill="none"/>
-      <rect x="58" y="50" width="18" height="6" fill="#333" rx="2"/>
-    </g>`}).join('')}
-</svg>` )}`;
-
-// Zombie sprite: 6 frames, frame size 96x96
-const ZOMBIE_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
-`<svg xmlns="http://www.w3.org/2000/svg" width="576" height="96" viewBox="0 0 576 96">
-  ${[0,1,2,3,4,5].map(i => {
-    const offset = i*96;
-    const sway = [0,4,8,4,0,-4][i];
-    return `<g transform="translate(${offset},0)">
-      <rect width="96" height="96" fill="none"/>
-      <rect x="20" y="${12+sway}" width="56" height="44" fill="#7fbf7f" rx="6"/>
-      <rect x="30" y="${2+sway}" width="36" height="20" fill="#6fa66a" rx="4"/>
-      <rect x="26" y="${22+sway}" width="10" height="20" fill="#5c9f5b"/>
-      <rect x="60" y="${22-sway}" width="10" height="20" fill="#5c9f5b"/>
-      <rect x="34" y="${8+sway}" width="8" height="8" fill="#fff"/>
-      <rect x="54" y="${8-sway}" width="8" height="8" fill="#fff"/>
-      <rect x="36" y="${10+sway}" width="4" height="4" fill="#8b0000"/>
-      <rect x="56" y="${10-sway}" width="4" height="4" fill="#8b0000"/>
-    </g>`}).join('')}
-</svg>` )}`;
-
-// ---------- Canvas + Grid ----------
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-let W = canvas.width, H = canvas.height;
-const ROWS = 5, COLS = 9;
-const CELL_W = Math.floor(W / COLS), CELL_H = Math.floor(H / ROWS);
-const GRID_X = 0, GRID_Y = 0;
-
-let seedCount = 50;
-let waveNumber = 0;
-let runningWave = false;
-let entities = []; // enemies & projectiles
-let plants = []; // grid occupancy array of objects or null
-let selectedUnit = null;
-let gameMessage = document.getElementById('message');
-
-const seedEl = document.getElementById('seedCount');
-const waveEl = document.getElementById('waveNum');
-seedEl.textContent = seedCount;
-waveEl.textContent = waveNumber;
-
-// Sprite images
-const duckImg = new Image(); duckImg.src = DUCK_SVG;
-const zombieImg = new Image(); zombieImg.src = ZOMBIE_SVG;
-
-// Unit definitions (balances)
-const UNITS = {
-  shooter: { name:'Bebek Penembak', cost:50, cooldown:60, hp:60, dmg:18, range:6, spriteFrameW:96, spriteFrames:6 },
-  tank: { name:'Bebek Tank', cost:75, cooldown:180, hp:160, dmg:8, range:1, spriteFrameW:96, spriteFrames:6 },
-  slow: { name:'Bebek Beku', cost:60, cooldown:220, hp:80, dmg:4, range:4, slowPct:0.45, spriteFrameW:96, spriteFrames:6 }
-};
-
-// Enemy definitions
-const ENEMIES = {
-  normal: { speed: 0.6, hp: 40, reward: 15 },
-  fast: { speed: 1.2, hp: 24, reward: 10 },
-  shield: { speed: 0.45, hp: 90, reward: 30 }
-};
-
-// Grid init
-function resetGrid(){
-  plants = Array(ROWS).fill(0).map(()=>Array(COLS).fill(null));
-  entities = [];
-  seedCount = 50;
-  waveNumber = 0;
-  runningWave = false;
-  seedEl.textContent = seedCount;
-  waveEl.textContent = waveNumber;
-  document.getElementById('overlayStart').style.display = 'flex';
-  gameMessage.textContent = 'Status: Siap';
-}
-resetGrid();
-
-// ---------- UI unit bar ----------
-const unitBar = document.getElementById('unitBar');
-function buildUnitBar(){
-  unitBar.innerHTML = '';
-  Object.entries(UNITS).forEach(([key,def])=>{
-    const card = document.createElement('div');
-    card.className = 'unitCard'; card.dataset.unit = key;
-    card.innerHTML = `<div style="width:64px;height:48px"><img src="${DUCK_SVG}" style="width:64px;height:48px;object-fit:cover;display:block"></div>
-      <div style="text-align:center"><div class="unitCost">${def.cost}</div><div class="small" style="font-size:12px">${def.name}</div></div>`;
-    card.addEventListener('click', ()=>{ selectedUnit = key; document.querySelectorAll('.unitCard').forEach(c=>c.style.outline='none'); card.style.outline='3px solid rgba(15,23,42,0.12)'; gameMessage.textContent = `Selected: ${def.name}`; });
-    unitBar.appendChild(card);
-  });
-}
-buildUnitBar();
-
-// ---------- Input: plant placement ----------
-canvas.addEventListener('click', (ev)=>{
-  const rect = canvas.getBoundingClientRect();
-  const cx = (ev.clientX - rect.left) * (canvas.width/rect.width);
-  const cy = (ev.clientY - rect.top) * (canvas.height/rect.height);
-  const col = Math.floor(cx / CELL_W);
-  const row = Math.floor(cy / CELL_H);
-  if(row<0||row>=ROWS||col<0||col>=COLS) return;
-  // place unit if selected
-  if(selectedUnit){
-    const def = UNITS[selectedUnit];
-    if(seedCount < def.cost){ gameMessage.textContent = 'Tidak cukup biji'; return; }
-    if(plants[row][col]){ gameMessage.textContent = 'Sudah ada unit di sini'; return; }
-    plants[row][col] = { type:selectedUnit, cooldown:0, hp:def.hp };
-    seedCount -= def.cost; seedEl.textContent = seedCount;
-    gameMessage.textContent = `Ditanam: ${def.name} (r${row+1},c${col+1})`;
-    draw(); // immediate feedback
-  }
-});
-
-// ---------- Spawn waves ----------
-let spawnTimer = 0, spawnQueue = [];
-function queueWave(n){
-  // simple wave: mix of normal & fast; increasing shield later
-  const wave = waveNumber + 1;
-  spawnQueue = [];
-  for(let i=0;i< n; i++){
-    let type = 'normal';
-    if(wave>=4 && Math.random()<0.2) type = 'shield';
-    else if(Math.random() < Math.min(0.3, wave*0.05)) type = 'fast';
-    spawnQueue.push(type);
-  }
-}
-function startWave(){
-  if(runningWave) return;
-  waveNumber++; waveEl.textContent = waveNumber;
-  document.getElementById('overlayStart').style.display = 'none';
-  queueWave(6 + Math.floor(waveNumber * 1.6));
-  runningWave = true;
-  gameMessage.textContent = 'Wave berjalan...';
-}
-
-// ---------- Enemy spawn & movement ----------
-function spawnNextFromQueue(){
-  if(spawnQueue.length === 0) return;
-  const t = spawnQueue.shift();
-  const r = Math.floor(Math.random()*ROWS);
-  const cfg = ENEMIES[t];
-  const e = { kind: t, x: W + 40, row: r, y: r*CELL_H + (CELL_H - 64)/2, w:96, h:96, vx: -cfg.speed - (waveNumber*0.02), hp: cfg.hp, maxHp:cfg.hp, reward: cfg.reward, frameOffset:0 };
-  entities.push(e);
-  // zombie moan sfx (small)
-  playSfxMoan();
-}
-
-// ---------- Combat: plants shoot and attack ----------
-function plantActions(){
-  // for each plant, find nearest enemy in its row to its right within range (cols)
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      const p = plants[r][c];
-      if(!p) continue;
-      const def = UNITS[p.type];
-      if(p.cooldown > 0){ p.cooldown--; continue; }
-      // find enemy in range
-      let found = null;
-      let minDist = Infinity;
-      for(const e of entities){
-        if(e.row !== r) continue;
-        // compute dist in columns: from plant col to enemy x
-        const plantX = c*CELL_W + CELL_W/2;
-        const distCols = (e.x - plantX) / CELL_W;
-        if(distCols >= 0 && distCols <= def.range){
-          if(e.x < minDist){ minDist = e.x; found = e; }
+        function initAudio() {
+            if (!audioEnabled && audioContext.state === 'suspended') {
+                audioContext.resume();
+                audioEnabled = true;
+            }
         }
-      }
-      if(found){
-        // action by type
-        if(p.type === 'shooter'){
-          // spawn projectile
-          entities.push({ type:'proj', x: c*CELL_W + CELL_W*0.6, y: r*CELL_H + CELL_H*0.5, vx: 6, dmg:def.dmg, row:r });
-          p.cooldown = def.cooldown;
-          playSfxGun();
-        } else if(p.type === 'tank'){
-          // melee: if enemy close, damage it
-          const near = entities.find(en => en.row === r && en.x < (c*CELL_W + CELL_W*1.4) && en.x > (c*CELL_W));
-          if(near){ near.hp -= def.dmg; p.cooldown = def.cooldown; }
-        } else if(p.type === 'slow'){
-          // shoot slow pellet (low damage + slow)
-          entities.push({ type:'projSlow', x: c*CELL_W + CELL_W*0.6, y: r*CELL_H + CELL_H*0.5, vx:5, dmg:def.dmg, slow:def.slowPct, row:r });
-          p.cooldown = def.cooldown;
-          playSfxGun();
+
+        function playSound(frequency, duration, type = 'sine', volume = 0.3) {
+            if (!audioEnabled) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
         }
-      }
-    }
-  }
-}
 
-// ---------- Entities update ----------
-function updateEntities(){
-  // move enemies & projectiles
-  for(let i=entities.length-1;i>=0;i--){
-    const e = entities[i];
-    if(e.type === 'proj' || e.type === 'projSlow'){
-      e.x += e.vx;
-      // collision with enemies in same row
-      for(let j=entities.length-1;j>=0;j--){
-        if(entities[j] && entities[j].kind){
-          const en = entities[j];
-          if(en.row === e.row && e.x + 6 > en.x && e.x < en.x + en.w/2){
-            en.hp -= e.dmg;
-            if(e.type === 'projSlow') en.slowUntil = Date.now() + 800;
-            entities.splice(i,1); break;
-          }
+        function playShootSound() {
+            playSound(800, 0.1, 'square', 0.2);
+            setTimeout(() => playSound(600, 0.05, 'square', 0.15), 50);
         }
-      }
-      if(e.x > W + 60) entities.splice(i,1);
-    } else if(e.kind){
-      // enemy movement (consider slow)
-      const slowFactor = (e.slowUntil && e.slowUntil > Date.now()) ? 0.45 : 1.0;
-      e.x += e.vx * slowFactor;
-      e.frameOffset = (e.frameOffset + 1) % 10000;
-      // reached left -> game over (for prototype, deduct seeds)
-      if(e.x < -60){
-        seedCount = Math.max(0, seedCount - 20);
-        seedEl.textContent = seedCount;
-        entities.splice(i,1);
-      }
-      // check collisions with plants: if in same cell and near, attack plant
-      const col = Math.floor(e.x / CELL_W);
-      if(col >=0 && col < COLS){
-        const p = plants[e.row][col];
-        if(p && e.x < (col*CELL_W + CELL_W*0.8)){
-          // deal damage to plant
-          p.hp -= 0.8;
-          if(p.hp <= 0){ plants[e.row][col] = null; }
+
+        function playJumpSound() {
+            playSound(400, 0.15, 'sine', 0.25);
+            setTimeout(() => playSound(600, 0.1, 'sine', 0.2), 80);
         }
-      }
-      // die
-      if(e.hp <= 0){
-        seedCount += e.reward; seedEl.textContent = seedCount;
-        entities.splice(i,1);
-      }
-    }
-  }
-}
 
-// ---------- Draw grid, units, enemies ----------
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  // background
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#cfefff'); g.addColorStop(1,'#eaf9ff');
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-  // grid tiles
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      const x = c*CELL_W, y = r*CELL_H;
-      ctx.fillStyle = '#e9f9e4';
-      ctx.fillRect(x+2,y+2,CELL_W-4,CELL_H-4);
-      ctx.strokeStyle = 'rgba(0,0,0,0.03)';
-      ctx.strokeRect(x+2,y+2,CELL_W-4,CELL_H-4);
-      // draw plant if any
-      const p = plants[r][c];
-      if(p){
-        // if sprite ready -> draw sprite frame based on time
-        if(duckImg.complete){
-          const frame = (p.type==='tank') ? 2 : (Math.abs(p.cooldown) % 6);
-          const sx = (frame % 6)*96;
-          ctx.drawImage(duckImg, sx, 0, 96,96, x + CELL_W*0.12, y + CELL_H*0.08, CELL_W*0.76, CELL_H*0.84);
-        } else {
-          // fallback
-          ctx.fillStyle = '#ffd85a';
-          ctx.fillRect(x+CELL_W*0.2,y+CELL_H*0.2,CELL_W*0.6,CELL_H*0.6);
+        function playHitSound() {
+            playSound(200, 0.2, 'sawtooth', 0.3);
         }
-        // plant HP small bar
-        ctx.fillStyle = '#334155'; ctx.fillRect(x+8,y+6,CELL_W-16,6);
-        const def = UNITS[p.type];
-        const pct = Math.max(0, p.hp / def.hp);
-        ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#eab308' : '#ef4444';
-        ctx.fillRect(x+8,y+6,(CELL_W-16)*pct,6);
-      }
-    }
-  }
 
-  // draw entities
-  for(const e of entities){
-    if(e.kind){
-      // draw zombie sprite (frame by frame)
-      if(zombieImg.complete){
-        const frame = Math.floor((Date.now()/120 + e.frameOffset/10) % 6);
-        const sx = frame * 96;
-        ctx.drawImage(zombieImg, sx, 0, 96,96, e.x, e.y, 64,64);
-      } else {
-        ctx.fillStyle = '#7fbf7f'; ctx.fillRect(e.x, e.y, 48,48);
-      }
-      // hp bar
-      ctx.fillStyle = '#333'; ctx.fillRect(e.x, e.y-8, e.w/1.5,6);
-      ctx.fillStyle = '#22c55e'; ctx.fillRect(e.x, e.y-8, Math.max(0,(e.hp/e.maxHp) * e.w/1.5),6);
-    } else if(e.type === 'proj' || e.type === 'projSlow'){
-      ctx.fillStyle = (e.type==='proj')? '#8be0ff' : '#bde0ff';
-      ctx.beginPath(); ctx.arc(e.x, e.y, 6,0,Math.PI*2); ctx.fill();
-    }
-  }
-}
+        function playDeathSound() {
+            playSound(100, 0.3, 'sawtooth', 0.4);
+            setTimeout(() => playSound(80, 0.3, 'sawtooth', 0.3), 100);
+            setTimeout(() => playSound(60, 0.4, 'sawtooth', 0.2), 200);
+        }
 
-// ---------- Game loop ----------
-let lastTime = performance.now();
-function gameLoop(ts){
-  const dt = ts - lastTime; lastTime = ts;
-  if(runningWave){
-    // spawn pacing
-    spawnTimer += dt;
-    if(spawnTimer > 800 && spawnQueue.length > 0){
-      spawnTimer = 0;
-      spawnNextFromQueue();
-    }
-    // finish wave check
-    if(spawnQueue.length === 0 && !entities.some(e=>e.kind)) {
-      runningWave = false;
-      gameMessage.textContent = 'Wave selesai! Siap next.';
-      document.getElementById('overlayStart').style.display = 'flex';
-    }
-  }
-  // plants shoot
-  plantActions();
-  // update entities
-  updateEntities();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
-requestAnimationFrame(gameLoop);
+        function playEnemyHitSound() {
+            playSound(300, 0.1, 'square', 0.2);
+        }
 
-// ---------- Controls ----------
-document.getElementById('startWaveBtn').addEventListener('click', ()=>{
-  startWave();
-});
-document.getElementById('resetBtn').addEventListener('click', ()=>{ resetGrid(); });
-document.getElementById('muteBtn').addEventListener('click', ()=>{ muted = !muted; document.getElementById('muteBtn').textContent = muted? '🔇':'🔊'; });
+        function playEnemyDeathSound() {
+            playSound(150, 0.2, 'triangle', 0.25);
+            setTimeout(() => playSound(100, 0.15, 'triangle', 0.2), 100);
+        }
 
-// ---------- Simple audio SFX (WebAudio minimal) ----------
-let audioCtx=null, muted=false;
-function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-function playSfxGun(){ if(muted) return; ensureAudio(); playOsc(1200,0.06,0.24); }
-function playSfxMoan(){ if(muted) return; ensureAudio(); playOsc(80,0.6,0.08); }
-function playOsc(freq,dur,vol){ const now = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(vol,now+0.01); g.gain.exponentialRampToValueAtTime(0.001, now+dur); o.start(now); o.stop(now+dur+0.03); }
+        function playWaveCompleteSound() {
+            playSound(523, 0.15, 'sine', 0.3);
+            setTimeout(() => playSound(659, 0.15, 'sine', 0.3), 150);
+            setTimeout(() => playSound(784, 0.2, 'sine', 0.35), 300);
+        }
 
-// wire playSfx functions used above:
-function playSfxGun(){ if(muted) return; ensureAudio(); playOsc(1200,0.06,0.24); }
-function playSfxMoan(){ if(muted) return; ensureAudio(); playOsc(80,0.6,0.08); }
+        function playGameOverSound() {
+            playSound(440, 0.3, 'sawtooth', 0.4);
+            setTimeout(() => playSound(370, 0.3, 'sawtooth', 0.35), 300);
+            setTimeout(() => playSound(294, 0.5, 'sawtooth', 0.3), 600);
+        }
 
-// initial message
-gameMessage.textContent = 'Klik unit lalu klik ubin untuk menanam. Tekan Start Wave untuk mulai.';
+        // Game state
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let wave = 1;
+        let frameCount = 0;
 
-// ---------- Level & balance data (JSON) ----------
-const LEVEL_DATA = {
-  grid: { rows: ROWS, cols: COLS },
-  units: {
-    shooter: { cost:50, cooldown:60, hp:60, dmg:18, range:6 },
-    tank: { cost:75, cooldown:180, hp:160, dmg:8, range:1 },
-    slow: { cost:60, cooldown:220, hp:80, dmg:4, slowPct:0.45 }
-  },
-  waves: [
-    { wave:1, enemies:6, types:['normal'] },
-    { wave:2, enemies:7, types:['normal','fast'] },
-    { wave:3, enemies:9, types:['normal','fast'] },
-    { wave:5, enemies:12, types:['normal','shield','fast'] }
-  ],
-  notes: "Seed reward per enemy ~10-40. Adjust costs if too hard/easy."
-};
-console.log('LEVEL_DATA', LEVEL_DATA);
+        // Player
+        const player = {
+            x: 150,
+            y: 400,
+            width: 50,
+            height: 50,
+            velocityX: 0,
+            velocityY: 0,
+            speed: 7,
+            jumpPower: 16,
+            maxHP: 100,
+            hp: 100,
+            canJump: true,
+            jumpsRemaining: 2,
+            onGround: false,
+            invincible: 0,
+            direction: 1
+        };
 
-// ---------- END PROTOTYPE ----------
-</script>
+        // Bullets
+        const bullets = [];
+        const bulletSpeed = 12;
+        let lastShotTime = 0;
+        const shootCooldown = 150;
+
+        // Enemies
+        const enemies = [];
+        const enemySpawnRate = 100;
+        let lastEnemySpawn = 0;
+
+        // Particles
+        const particles = [];
+
+        // Controls
+        const keys = {};
+        let shooting = false;
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                shooting = true;
+            }
+            
+            if (e.key === 'Escape') {
+                togglePause();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                shooting = false;
+            }
+        });
+
+        // Mobile controls
+        ['leftBtn', 'rightBtn'].forEach(id => {
+            const key = id === 'leftBtn' ? 'a' : 'd';
+            document.getElementById(id).addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[key] = true;
+            });
+            document.getElementById(id).addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[key] = false;
+            });
+        });
+
+        document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (player.jumpsRemaining > 0) {
+                player.velocityY = -player.jumpPower;
+                player.jumpsRemaining--;
+                player.onGround = false;
+                playJumpSound();
+            }
+        });
+
+        document.getElementById('shootBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            shooting = true;
+        });
+        document.getElementById('shootBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            shooting = false;
+        });
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+        function startGame() {
+            initAudio();
+            document.getElementById('menu').classList.add('hidden');
+            gameRunning = true;
+            gamePaused = false;
+            playWaveCompleteSound();
+            gameLoop();
+        }
+
+        function restartGame() {
+            initAudio();
+            document.getElementById('gameOver').style.display = 'none';
+            score = 0;
+            wave = 1;
+            player.hp = player.maxHP;
+            player.x = 150;
+            player.y = 400;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            bullets.length = 0;
+            enemies.length = 0;
+            particles.length = 0;
+            updateUI();
+            gameRunning = true;
+            gamePaused = false;
+            playWaveCompleteSound();
+            gameLoop();
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
+            if (!gamePaused) {
+                gameLoop();
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            playGameOverSound();
+            document.getElementById('finalScore').textContent = `Skor Akhir: ${score}`;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('wave').textContent = wave;
+            document.getElementById('hp').textContent = Math.max(0, Math.floor(player.hp));
+            document.getElementById('hpFill').style.width = (player.hp / player.maxHP * 100) + '%';
+        }
+
+        function createParticle(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 40,
+                    size: Math.random() * 4 + 2,
+                    color: color
+                });
+            }
+        }
+
+        function drawDuck(x, y, width, height, invincible) {
+            if (invincible % 10 < 5 || invincible === 0) {
+                // Body
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.ellipse(x + width/2, y + height/2, width/2, height/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(x + width * 0.7, y + height * 0.3, width * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Beak
+                ctx.fillStyle = '#FF8C00';
+                ctx.beginPath();
+                ctx.moveTo(x + width * 0.9, y + height * 0.3);
+                ctx.lineTo(x + width * 1.1, y + height * 0.25);
+                ctx.lineTo(x + width * 1.1, y + height * 0.35);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(x + width * 0.75, y + height * 0.25, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wing
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.ellipse(x + width * 0.4, y + height * 0.6, width * 0.2, height * 0.15, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Feet
+                ctx.fillStyle = '#FF8C00';
+                ctx.fillRect(x + width * 0.3, y + height * 0.95, 8, 4);
+                ctx.fillRect(x + width * 0.6, y + height * 0.95, 8, 4);
+            }
+        }
+
+        function drawZombie(x, y, width, height, type) {
+            // Body color based on type
+            if (type === 'zombie') {
+                ctx.fillStyle = '#2d5016';
+            } else if (type === 'fast') {
+                ctx.fillStyle = '#8B7355';
+            } else {
+                ctx.fillStyle = '#654321';
+            }
+            
+            // Body
+            ctx.fillRect(x, y + height * 0.4, width, height * 0.6);
+            
+            // Head
+            ctx.fillStyle = type === 'zombie' ? '#567d46' : (type === 'fast' ? '#D2691E' : '#8B4513');
+            ctx.fillRect(x + width * 0.1, y, width * 0.8, height * 0.5);
+            
+            // Eyes (red)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(x + width * 0.25, y + height * 0.15, 8, 8);
+            ctx.fillRect(x + width * 0.6, y + height * 0.15, 8, 8);
+            
+            // Mouth
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + width * 0.2, y + height * 0.35, width * 0.6, 4);
+            
+            // Arms
+            ctx.fillStyle = type === 'zombie' ? '#567d46' : (type === 'fast' ? '#D2691E' : '#8B4513');
+            ctx.fillRect(x - 5, y + height * 0.5, 8, height * 0.3);
+            ctx.fillRect(x + width - 3, y + height * 0.5, 8, height * 0.3);
+        }
+
+        function updatePlayer() {
+            // Horizontal movement
+            if (keys['a'] || keys['arrowleft']) {
+                player.velocityX = -player.speed;
+                player.direction = -1;
+            } else if (keys['d'] || keys['arrowright']) {
+                player.velocityX = player.speed;
+                player.direction = 1;
+            } else {
+                player.velocityX *= 0.85;
+            }
+
+            // Jump
+            if ((keys['w'] || keys['arrowup']) && player.jumpsRemaining > 0 && player.canJump) {
+                player.velocityY = -player.jumpPower;
+                player.jumpsRemaining--;
+                player.canJump = false;
+                player.onGround = false;
+                playJumpSound();
+            }
+
+            if (!keys['w'] && !keys['arrowup']) {
+                player.canJump = true;
+            }
+
+            // Gravity
+            player.velocityY += 0.8;
+
+            // Update position
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+
+            // Ground collision
+            const ground = canvas.height - 120;
+            if (player.y + player.height > ground) {
+                player.y = ground - player.height;
+                player.velocityY = 0;
+                player.jumpsRemaining = 2;
+                player.onGround = true;
+            }
+
+            // Wall collision
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            // Shooting
+            if (shooting) {
+                const now = Date.now();
+                if (now - lastShotTime > shootCooldown) {
+                    bullets.push({
+                        x: player.x + (player.direction > 0 ? player.width : 0),
+                        y: player.y + player.height / 2 - 3,
+                        width: 15,
+                        height: 6,
+                        direction: player.direction
+                    });
+                    playShootSound();
+                    lastShotTime = now;
+                }
+            }
+
+            // Decrease invincibility
+            if (player.invincible > 0) {
+                player.invincible--;
+            }
+        }
+
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].x += bulletSpeed * bullets[i].direction;
+                
+                if (bullets[i].x > canvas.width || bullets[i].x < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        function spawnEnemy() {
+            const now = frameCount;
+            if (now - lastEnemySpawn > Math.max(enemySpawnRate - (wave * 3), 30)) {
+                const enemyTypes = ['zombie', 'fast', 'tank'];
+                const weights = wave >= 3 ? [0.5, 0.3, 0.2] : (wave >= 2 ? [0.7, 0.3, 0] : [1, 0, 0]);
+                
+                const rand = Math.random();
+                let type = 'zombie';
+                if (rand > weights[0] && rand <= weights[0] + weights[1]) type = 'fast';
+                else if (rand > weights[0] + weights[1]) type = 'tank';
+                
+                let enemy = {
+                    x: canvas.width,
+                    y: canvas.height - 170,
+                    width: 45,
+                    height: 50,
+                    speed: 2.5,
+                    hp: 3,
+                    type: type
+                };
+
+                if (type === 'fast') {
+                    enemy.speed = 5;
+                    enemy.hp = 2;
+                    enemy.width = 35;
+                    enemy.height = 45;
+                } else if (type === 'tank') {
+                    enemy.speed = 1.5;
+                    enemy.hp = 10;
+                    enemy.width = 60;
+                    enemy.height = 65;
+                    enemy.y = canvas.height - 185;
+                }
+
+                enemies.push(enemy);
+                lastEnemySpawn = now;
+            }
+        }
+
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].x -= enemies[i].speed;
+                
+                // Check collision with player
+                if (!player.invincible &&
+                    player.x < enemies[i].x + enemies[i].width &&
+                    player.x + player.width > enemies[i].x &&
+                    player.y < enemies[i].y + enemies[i].height &&
+                    player.y + player.height > enemies[i].y) {
+                    
+                    player.hp -= 15;
+                    player.invincible = 60;
+                    createParticle(player.x + player.width/2, player.y + player.height/2, '#ff0000');
+                    playHitSound();
+                    
+                    if (player.hp <= 0) {
+                        playDeathSound();
+                        gameOver();
+                        return;
+                    }
+                    updateUI();
+                }
+                
+                // Check collision with bullets
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    if (bullets[j] && enemies[i] &&
+                        bullets[j].x < enemies[i].x + enemies[i].width &&
+                        bullets[j].x + bullets[j].width > enemies[i].x &&
+                        bullets[j].y < enemies[i].y + enemies[i].height &&
+                        bullets[j].y + bullets[j].height > enemies[i].y) {
+                        
+                        enemies[i].hp--;
+                        bullets.splice(j, 1);
+                        createParticle(enemies[i].x + enemies[i].width/2, enemies[i].y + enemies[i].height/2, '#00ff00');
+                        playEnemyHitSound();
+                        
+                        if (enemies[i].hp <= 0) {
+                            score += enemies[i].type === 'fast' ? 20 : (enemies[i].type === 'tank' ? 50 : 10);
+                            playEnemyDeathSound();
+                            enemies.splice(i, 1);
+                            
+                            if (score >= wave * 150) {
+                                wave++;
+                                playWaveCompleteSound();
+                            }
+                            updateUI();
+                            break;
+                        }
+                    }
+                }
+                
+                // Remove if off screen
+                if (enemies[i] && enemies[i].x + enemies[i].width < 0) {
+                    enemies.splice(i, 1);
+                }
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].vy += 0.3;
+                particles[i].life--;
+                
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Clear canvas with gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.7, '#E0F6FF');
+            gradient.addColorStop(1, '#90EE90');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw clouds
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            for (let i = 0; i < 5; i++) {
+                const x = (frameCount * 0.2 + i * 250) % (canvas.width + 100);
+                ctx.beginPath();
+                ctx.arc(x, 80 + i * 30, 30, 0, Math.PI * 2);
+                ctx.arc(x + 25, 80 + i * 30, 40, 0, Math.PI * 2);
+                ctx.arc(x + 50, 80 + i * 30, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw ground
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
+            
+            // Draw grass
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, canvas.height - 120, canvas.width, 15);
+            
+            // Draw grass details
+            ctx.fillStyle = '#32CD32';
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.fillRect(i, canvas.height - 120, 3, 8);
+                ctx.fillRect(i + 10, canvas.height - 115, 3, 10);
+            }
+            
+            // Draw player
+            drawDuck(player.x, player.y, player.width, player.height, player.invincible);
+            
+            // Draw bullets
+            ctx.fillStyle = '#FFD700';
+            ctx.strokeStyle = '#FF0000';
+            ctx.lineWidth = 2;
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                ctx.strokeRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            // Draw enemies
+            enemies.forEach(enemy => {
+                drawZombie(enemy.x, enemy.y, enemy.width, enemy.height, enemy.type);
+            });
+            
+            // Draw particles
+            particles.forEach(particle => {
+                ctx.fillStyle = particle.color;
+                ctx.globalAlpha = particle.life / 40;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw pause overlay
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 72px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⏸ PAUSE', canvas.width/2, canvas.height/2);
+                ctx.font = '32px Arial';
+                ctx.fillStyle = '#fff';
+                ctx.fillText('Tekan ESC untuk melanjutkan', canvas.width/2, canvas.height/2 + 60);
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+            
+            frameCount++;
+            
+            updatePlayer();
+            updateBullets();
+            spawnEnemy();
+            updateEnemies();
+            updateParticles();
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        updateUI();
+        draw();
+    </script>
 </body>
 </html>
