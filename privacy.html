@@ -1,81 +1,463 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kebijakan Privasi — EL48 Tools</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 20px;
-      line-height: 1.7;
-    }
-    h1 { color: #fff; }
-    a { color: #38bdf8; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Prototype — Bebek vs Zombi (Tower Defense)</title>
+<style>
+  :root{--bg:#eef8ff;--panel:#ffffff;--accent:#0f172a;--tile:#d8f0c6}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#0f172a}
+  body{display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px}
+  .wrap{width:95vw;max-width:980px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .title{font-weight:800;font-size:18px}
+  .toolbar{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+  .hud{display:flex;gap:12px;align-items:center;font-weight:700}
+  #gameArea{background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:0 8px 20px rgba(2,6,23,0.08);position:relative}
+  canvas{display:block;width:100%;height:auto;background:linear-gradient(#cfefff,#eaf9ff)}
+  #panelBottom{display:flex;gap:10px;align-items:center;padding:8px;justify-content:space-between}
+  .unitCard{width:88px;height:96px;background:linear-gradient(180deg,#fff,#f4fff0);border-radius:8px;border:1px solid rgba(0,0,0,0.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+  .unitCard.locked{opacity:0.5}
+  .unitCost{font-weight:800;font-size:14px;color:#0f172a}
+  .resource{background:#fff;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);font-weight:800}
+  #message{font-size:13px;color:#334155}
+  /* grid hint */
+  .overlayStart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(2,6,23,0.6);color:#fff;font-weight:700;z-index:20}
+  .small{font-size:13px;color:#334155}
+  @media (max-width:420px){
+    .unitCard{width:72px;height:84px}
+  }
+</style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <div class="title">🥀 Bebek Manyun — Tower Defense (Prototype)</div>
+      <div class="toolbar">
+        <div class="hud">
+          <div class="resource">Biji: <span id="seedCount">50</span></div>
+          <div class="resource">Wave: <span id="waveNum">0</span></div>
+        </div>
+        <button id="muteBtn" class="btn" style="margin-left:8px">🔊</button>
+      </div>
+    </header>
 
-<h1>Kebijakan Privasi</h1>
-<p>Terakhir diperbarui: 2025</p>
+    <div id="gameArea">
+      <canvas id="gameCanvas" width="900" height="540"></canvas>
+      <div id="overlayStart" class="overlayStart" style="display:flex">
+        <div style="font-size:20px">🦆 Bebek vs Zombi — Prototype</div>
+        <div class="small">Klik unit di bawah lalu klik ubin untuk menanam. Tekan "Start Wave".</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="startWaveBtn" class="btn">▶ Mulai Wave</button>
+          <button id="resetBtn" class="btn" style="background:#374151">Reset</button>
+        </div>
+      </div>
+    </div>
 
-<p>
-Kebijakan Privasi ini menjelaskan bagaimana EL48 Tools mengelola informasi Anda saat
-menggunakan layanan kami. Kami berkomitmen untuk melindungi privasi Anda.
-</p>
+    <div id="panelBottom">
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="unitBar" style="display:flex;gap:8px">
+          <!-- unit cards injected by JS -->
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end">
+        <div id="message">Status: Siap</div>
+        <div class="small">Prototype: grid 5 baris × 9 kolom</div>
+      </div>
+    </div>
+  </div>
 
-<h2>1. Data yang Kami Kumpulkan</h2>
-<p>
-Kami <strong>tidak mengumpulkan data pribadi apa pun</strong>. Semua proses dalam aplikasi seperti
-mengompres gambar atau menerjemahkan teks dilakukan sepenuhnya di perangkat Anda.
-Tidak ada data yang dikirimkan ke server kami.
-</p>
+<script>
+/* ====== PROTOTYPE: Bebek TD ======
+   Includes:
+   - Grid (5×9)
+   - 3 unit types (Shooter, Tank, Slow)
+   - Enemies spawn per wave moving left
+   - Sprite-sheet via embedded SVG data-URI (duck & zombie)
+   - Simple UI: buy units, start wave, reset
+   - Sound via WebAudio (simple sfx)
+*/
 
-<h2>2. Penggunaan Informasi</h2>
-<p>
-Karena kami tidak mengumpulkan data, kami tidak menggunakan, menyimpan, atau membagikan
-informasi apa pun kepada pihak mana pun.
-</p>
+// ---------- SPRITES (data-URI SVG) ----------
+// Duck sprite: 6 frames (idle+run+jump+fire). Frame size 96x96.
+const DUCK_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+`<svg xmlns="http://www.w3.org/2000/svg" width="576" height="96" viewBox="0 0 576 96">
+  <!-- 6 frames, each 96x96 horizontally -->
+  ${[0,1,2,3,4,5].map(i => {
+    const offset = i*96;
+    const wing = [0,-6,-10,-6,0,4][i];
+    return `<g transform="translate(${offset},0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="52" rx="28" ry="20" fill="#ffd85a" />
+      <ellipse cx="32" cy="${26+wing}" rx="12" ry="8" fill="#ffcf36"/>
+      <circle cx="36" cy="28" r="6" fill="#fff"/>
+      <circle cx="36" cy="28" r="3" fill="#052022"/>
+      <path d="M30 42 Q40 50 50 42" stroke="#5b3a00" stroke-width="2" fill="none"/>
+      <rect x="58" y="50" width="18" height="6" fill="#333" rx="2"/>
+    </g>`}).join('')}
+</svg>` )}`;
 
-<h2>3. Pemrosesan di Perangkat Anda</h2>
-<p>
-Seluruh fungsi aplikasi berjalan secara lokal (on-device). File, foto, dan teks yang Anda gunakan
-tetap berada 100% di perangkat Anda.
-</p>
+// Zombie sprite: 6 frames, frame size 96x96
+const ZOMBIE_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+`<svg xmlns="http://www.w3.org/2000/svg" width="576" height="96" viewBox="0 0 576 96">
+  ${[0,1,2,3,4,5].map(i => {
+    const offset = i*96;
+    const sway = [0,4,8,4,0,-4][i];
+    return `<g transform="translate(${offset},0)">
+      <rect width="96" height="96" fill="none"/>
+      <rect x="20" y="${12+sway}" width="56" height="44" fill="#7fbf7f" rx="6"/>
+      <rect x="30" y="${2+sway}" width="36" height="20" fill="#6fa66a" rx="4"/>
+      <rect x="26" y="${22+sway}" width="10" height="20" fill="#5c9f5b"/>
+      <rect x="60" y="${22-sway}" width="10" height="20" fill="#5c9f5b"/>
+      <rect x="34" y="${8+sway}" width="8" height="8" fill="#fff"/>
+      <rect x="54" y="${8-sway}" width="8" height="8" fill="#fff"/>
+      <rect x="36" y="${10+sway}" width="4" height="4" fill="#8b0000"/>
+      <rect x="56" y="${10-sway}" width="4" height="4" fill="#8b0000"/>
+    </g>`}).join('')}
+</svg>` )}`;
 
-<h2>4. Cookies dan Pelacakan</h2>
-<p>
-Kami tidak menggunakan cookies, analitik, pelacak, atau teknologi serupa.
-</p>
+// ---------- Canvas + Grid ----------
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width, H = canvas.height;
+const ROWS = 5, COLS = 9;
+const CELL_W = Math.floor(W / COLS), CELL_H = Math.floor(H / ROWS);
+const GRID_X = 0, GRID_Y = 0;
 
-<h2>5. Tautan ke Pihak Ketiga</h2>
-<p>
-Aplikasi kami mungkin menyediakan tautan ke layanan seperti GitHub.  
-Kami tidak bertanggung jawab atas kebijakan privasi atau konten situs tersebut.
-</p>
+let seedCount = 50;
+let waveNumber = 0;
+let runningWave = false;
+let entities = []; // enemies & projectiles
+let plants = []; // grid occupancy array of objects or null
+let selectedUnit = null;
+let gameMessage = document.getElementById('message');
 
-<h2>6. Keamanan</h2>
-<p>
-Karena tidak ada data yang dikirim atau disimpan, risiko keamanan menjadi minimal.
-Namun, keamanan perangkat Anda berada di luar kendali kami.
-</p>
+const seedEl = document.getElementById('seedCount');
+const waveEl = document.getElementById('waveNum');
+seedEl.textContent = seedCount;
+waveEl.textContent = waveNumber;
 
-<h2>7. Perubahan Kebijakan</h2>
-<p>
-Kami dapat memperbarui Kebijakan Privasi ini sewaktu-waktu. Perubahan akan
-dipublikasikan di halaman ini.
-</p>
+// Sprite images
+const duckImg = new Image(); duckImg.src = DUCK_SVG;
+const zombieImg = new Image(); zombieImg.src = ZOMBIE_SVG;
 
-<h2>8. Hubungi Kami</h2>
-<p>
-Jika Anda memiliki pertanyaan atau saran mengenai Kebijakan Privasi ini,
-silakan hubungi kami melalui WhatsApp:<br>
-<a href="https://wa.me/62812xxxxxxx" target="_blank">Hubungi via WhatsApp</a>
-</p>
+// Unit definitions (balances)
+const UNITS = {
+  shooter: { name:'Bebek Penembak', cost:50, cooldown:60, hp:60, dmg:18, range:6, spriteFrameW:96, spriteFrames:6 },
+  tank: { name:'Bebek Tank', cost:75, cooldown:180, hp:160, dmg:8, range:1, spriteFrameW:96, spriteFrames:6 },
+  slow: { name:'Bebek Beku', cost:60, cooldown:220, hp:80, dmg:4, range:4, slowPct:0.45, spriteFrameW:96, spriteFrames:6 }
+};
 
-<p>© 2025 EL48 Tools</p>
+// Enemy definitions
+const ENEMIES = {
+  normal: { speed: 0.6, hp: 40, reward: 15 },
+  fast: { speed: 1.2, hp: 24, reward: 10 },
+  shield: { speed: 0.45, hp: 90, reward: 30 }
+};
 
+// Grid init
+function resetGrid(){
+  plants = Array(ROWS).fill(0).map(()=>Array(COLS).fill(null));
+  entities = [];
+  seedCount = 50;
+  waveNumber = 0;
+  runningWave = false;
+  seedEl.textContent = seedCount;
+  waveEl.textContent = waveNumber;
+  document.getElementById('overlayStart').style.display = 'flex';
+  gameMessage.textContent = 'Status: Siap';
+}
+resetGrid();
+
+// ---------- UI unit bar ----------
+const unitBar = document.getElementById('unitBar');
+function buildUnitBar(){
+  unitBar.innerHTML = '';
+  Object.entries(UNITS).forEach(([key,def])=>{
+    const card = document.createElement('div');
+    card.className = 'unitCard'; card.dataset.unit = key;
+    card.innerHTML = `<div style="width:64px;height:48px"><img src="${DUCK_SVG}" style="width:64px;height:48px;object-fit:cover;display:block"></div>
+      <div style="text-align:center"><div class="unitCost">${def.cost}</div><div class="small" style="font-size:12px">${def.name}</div></div>`;
+    card.addEventListener('click', ()=>{ selectedUnit = key; document.querySelectorAll('.unitCard').forEach(c=>c.style.outline='none'); card.style.outline='3px solid rgba(15,23,42,0.12)'; gameMessage.textContent = `Selected: ${def.name}`; });
+    unitBar.appendChild(card);
+  });
+}
+buildUnitBar();
+
+// ---------- Input: plant placement ----------
+canvas.addEventListener('click', (ev)=>{
+  const rect = canvas.getBoundingClientRect();
+  const cx = (ev.clientX - rect.left) * (canvas.width/rect.width);
+  const cy = (ev.clientY - rect.top) * (canvas.height/rect.height);
+  const col = Math.floor(cx / CELL_W);
+  const row = Math.floor(cy / CELL_H);
+  if(row<0||row>=ROWS||col<0||col>=COLS) return;
+  // place unit if selected
+  if(selectedUnit){
+    const def = UNITS[selectedUnit];
+    if(seedCount < def.cost){ gameMessage.textContent = 'Tidak cukup biji'; return; }
+    if(plants[row][col]){ gameMessage.textContent = 'Sudah ada unit di sini'; return; }
+    plants[row][col] = { type:selectedUnit, cooldown:0, hp:def.hp };
+    seedCount -= def.cost; seedEl.textContent = seedCount;
+    gameMessage.textContent = `Ditanam: ${def.name} (r${row+1},c${col+1})`;
+    draw(); // immediate feedback
+  }
+});
+
+// ---------- Spawn waves ----------
+let spawnTimer = 0, spawnQueue = [];
+function queueWave(n){
+  // simple wave: mix of normal & fast; increasing shield later
+  const wave = waveNumber + 1;
+  spawnQueue = [];
+  for(let i=0;i< n; i++){
+    let type = 'normal';
+    if(wave>=4 && Math.random()<0.2) type = 'shield';
+    else if(Math.random() < Math.min(0.3, wave*0.05)) type = 'fast';
+    spawnQueue.push(type);
+  }
+}
+function startWave(){
+  if(runningWave) return;
+  waveNumber++; waveEl.textContent = waveNumber;
+  document.getElementById('overlayStart').style.display = 'none';
+  queueWave(6 + Math.floor(waveNumber * 1.6));
+  runningWave = true;
+  gameMessage.textContent = 'Wave berjalan...';
+}
+
+// ---------- Enemy spawn & movement ----------
+function spawnNextFromQueue(){
+  if(spawnQueue.length === 0) return;
+  const t = spawnQueue.shift();
+  const r = Math.floor(Math.random()*ROWS);
+  const cfg = ENEMIES[t];
+  const e = { kind: t, x: W + 40, row: r, y: r*CELL_H + (CELL_H - 64)/2, w:96, h:96, vx: -cfg.speed - (waveNumber*0.02), hp: cfg.hp, maxHp:cfg.hp, reward: cfg.reward, frameOffset:0 };
+  entities.push(e);
+  // zombie moan sfx (small)
+  playSfxMoan();
+}
+
+// ---------- Combat: plants shoot and attack ----------
+function plantActions(){
+  // for each plant, find nearest enemy in its row to its right within range (cols)
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const p = plants[r][c];
+      if(!p) continue;
+      const def = UNITS[p.type];
+      if(p.cooldown > 0){ p.cooldown--; continue; }
+      // find enemy in range
+      let found = null;
+      let minDist = Infinity;
+      for(const e of entities){
+        if(e.row !== r) continue;
+        // compute dist in columns: from plant col to enemy x
+        const plantX = c*CELL_W + CELL_W/2;
+        const distCols = (e.x - plantX) / CELL_W;
+        if(distCols >= 0 && distCols <= def.range){
+          if(e.x < minDist){ minDist = e.x; found = e; }
+        }
+      }
+      if(found){
+        // action by type
+        if(p.type === 'shooter'){
+          // spawn projectile
+          entities.push({ type:'proj', x: c*CELL_W + CELL_W*0.6, y: r*CELL_H + CELL_H*0.5, vx: 6, dmg:def.dmg, row:r });
+          p.cooldown = def.cooldown;
+          playSfxGun();
+        } else if(p.type === 'tank'){
+          // melee: if enemy close, damage it
+          const near = entities.find(en => en.row === r && en.x < (c*CELL_W + CELL_W*1.4) && en.x > (c*CELL_W));
+          if(near){ near.hp -= def.dmg; p.cooldown = def.cooldown; }
+        } else if(p.type === 'slow'){
+          // shoot slow pellet (low damage + slow)
+          entities.push({ type:'projSlow', x: c*CELL_W + CELL_W*0.6, y: r*CELL_H + CELL_H*0.5, vx:5, dmg:def.dmg, slow:def.slowPct, row:r });
+          p.cooldown = def.cooldown;
+          playSfxGun();
+        }
+      }
+    }
+  }
+}
+
+// ---------- Entities update ----------
+function updateEntities(){
+  // move enemies & projectiles
+  for(let i=entities.length-1;i>=0;i--){
+    const e = entities[i];
+    if(e.type === 'proj' || e.type === 'projSlow'){
+      e.x += e.vx;
+      // collision with enemies in same row
+      for(let j=entities.length-1;j>=0;j--){
+        if(entities[j] && entities[j].kind){
+          const en = entities[j];
+          if(en.row === e.row && e.x + 6 > en.x && e.x < en.x + en.w/2){
+            en.hp -= e.dmg;
+            if(e.type === 'projSlow') en.slowUntil = Date.now() + 800;
+            entities.splice(i,1); break;
+          }
+        }
+      }
+      if(e.x > W + 60) entities.splice(i,1);
+    } else if(e.kind){
+      // enemy movement (consider slow)
+      const slowFactor = (e.slowUntil && e.slowUntil > Date.now()) ? 0.45 : 1.0;
+      e.x += e.vx * slowFactor;
+      e.frameOffset = (e.frameOffset + 1) % 10000;
+      // reached left -> game over (for prototype, deduct seeds)
+      if(e.x < -60){
+        seedCount = Math.max(0, seedCount - 20);
+        seedEl.textContent = seedCount;
+        entities.splice(i,1);
+      }
+      // check collisions with plants: if in same cell and near, attack plant
+      const col = Math.floor(e.x / CELL_W);
+      if(col >=0 && col < COLS){
+        const p = plants[e.row][col];
+        if(p && e.x < (col*CELL_W + CELL_W*0.8)){
+          // deal damage to plant
+          p.hp -= 0.8;
+          if(p.hp <= 0){ plants[e.row][col] = null; }
+        }
+      }
+      // die
+      if(e.hp <= 0){
+        seedCount += e.reward; seedEl.textContent = seedCount;
+        entities.splice(i,1);
+      }
+    }
+  }
+}
+
+// ---------- Draw grid, units, enemies ----------
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // background
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#cfefff'); g.addColorStop(1,'#eaf9ff');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  // grid tiles
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const x = c*CELL_W, y = r*CELL_H;
+      ctx.fillStyle = '#e9f9e4';
+      ctx.fillRect(x+2,y+2,CELL_W-4,CELL_H-4);
+      ctx.strokeStyle = 'rgba(0,0,0,0.03)';
+      ctx.strokeRect(x+2,y+2,CELL_W-4,CELL_H-4);
+      // draw plant if any
+      const p = plants[r][c];
+      if(p){
+        // if sprite ready -> draw sprite frame based on time
+        if(duckImg.complete){
+          const frame = (p.type==='tank') ? 2 : (Math.abs(p.cooldown) % 6);
+          const sx = (frame % 6)*96;
+          ctx.drawImage(duckImg, sx, 0, 96,96, x + CELL_W*0.12, y + CELL_H*0.08, CELL_W*0.76, CELL_H*0.84);
+        } else {
+          // fallback
+          ctx.fillStyle = '#ffd85a';
+          ctx.fillRect(x+CELL_W*0.2,y+CELL_H*0.2,CELL_W*0.6,CELL_H*0.6);
+        }
+        // plant HP small bar
+        ctx.fillStyle = '#334155'; ctx.fillRect(x+8,y+6,CELL_W-16,6);
+        const def = UNITS[p.type];
+        const pct = Math.max(0, p.hp / def.hp);
+        ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#eab308' : '#ef4444';
+        ctx.fillRect(x+8,y+6,(CELL_W-16)*pct,6);
+      }
+    }
+  }
+
+  // draw entities
+  for(const e of entities){
+    if(e.kind){
+      // draw zombie sprite (frame by frame)
+      if(zombieImg.complete){
+        const frame = Math.floor((Date.now()/120 + e.frameOffset/10) % 6);
+        const sx = frame * 96;
+        ctx.drawImage(zombieImg, sx, 0, 96,96, e.x, e.y, 64,64);
+      } else {
+        ctx.fillStyle = '#7fbf7f'; ctx.fillRect(e.x, e.y, 48,48);
+      }
+      // hp bar
+      ctx.fillStyle = '#333'; ctx.fillRect(e.x, e.y-8, e.w/1.5,6);
+      ctx.fillStyle = '#22c55e'; ctx.fillRect(e.x, e.y-8, Math.max(0,(e.hp/e.maxHp) * e.w/1.5),6);
+    } else if(e.type === 'proj' || e.type === 'projSlow'){
+      ctx.fillStyle = (e.type==='proj')? '#8be0ff' : '#bde0ff';
+      ctx.beginPath(); ctx.arc(e.x, e.y, 6,0,Math.PI*2); ctx.fill();
+    }
+  }
+}
+
+// ---------- Game loop ----------
+let lastTime = performance.now();
+function gameLoop(ts){
+  const dt = ts - lastTime; lastTime = ts;
+  if(runningWave){
+    // spawn pacing
+    spawnTimer += dt;
+    if(spawnTimer > 800 && spawnQueue.length > 0){
+      spawnTimer = 0;
+      spawnNextFromQueue();
+    }
+    // finish wave check
+    if(spawnQueue.length === 0 && !entities.some(e=>e.kind)) {
+      runningWave = false;
+      gameMessage.textContent = 'Wave selesai! Siap next.';
+      document.getElementById('overlayStart').style.display = 'flex';
+    }
+  }
+  // plants shoot
+  plantActions();
+  // update entities
+  updateEntities();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+
+// ---------- Controls ----------
+document.getElementById('startWaveBtn').addEventListener('click', ()=>{
+  startWave();
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{ resetGrid(); });
+document.getElementById('muteBtn').addEventListener('click', ()=>{ muted = !muted; document.getElementById('muteBtn').textContent = muted? '🔇':'🔊'; });
+
+// ---------- Simple audio SFX (WebAudio minimal) ----------
+let audioCtx=null, muted=false;
+function ensureAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+function playSfxGun(){ if(muted) return; ensureAudio(); playOsc(1200,0.06,0.24); }
+function playSfxMoan(){ if(muted) return; ensureAudio(); playOsc(80,0.6,0.08); }
+function playOsc(freq,dur,vol){ const now = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=0; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(vol,now+0.01); g.gain.exponentialRampToValueAtTime(0.001, now+dur); o.start(now); o.stop(now+dur+0.03); }
+
+// wire playSfx functions used above:
+function playSfxGun(){ if(muted) return; ensureAudio(); playOsc(1200,0.06,0.24); }
+function playSfxMoan(){ if(muted) return; ensureAudio(); playOsc(80,0.6,0.08); }
+
+// initial message
+gameMessage.textContent = 'Klik unit lalu klik ubin untuk menanam. Tekan Start Wave untuk mulai.';
+
+// ---------- Level & balance data (JSON) ----------
+const LEVEL_DATA = {
+  grid: { rows: ROWS, cols: COLS },
+  units: {
+    shooter: { cost:50, cooldown:60, hp:60, dmg:18, range:6 },
+    tank: { cost:75, cooldown:180, hp:160, dmg:8, range:1 },
+    slow: { cost:60, cooldown:220, hp:80, dmg:4, slowPct:0.45 }
+  },
+  waves: [
+    { wave:1, enemies:6, types:['normal'] },
+    { wave:2, enemies:7, types:['normal','fast'] },
+    { wave:3, enemies:9, types:['normal','fast'] },
+    { wave:5, enemies:12, types:['normal','shield','fast'] }
+  ],
+  notes: "Seed reward per enemy ~10-40. Adjust costs if too hard/easy."
+};
+console.log('LEVEL_DATA', LEVEL_DATA);
+
+// ---------- END PROTOTYPE ----------
+</script>
 </body>
 </html>
