@@ -171,5 +171,14 @@
     a.click();  
   });  
 })();  
-</script>  </body>  
-</html>  
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(()=> console.log('Service worker terdaftar'))
+    .catch(err => console.warn('Gagal register SW:', err));
+}
+</script>
+</body>
+</html>
