@@ -1,359 +1,175 @@
 <!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>EL48 — Kompres Foto</title>
-<meta name="description" content="Kompres gambar di browser — modern UI, offline-ready." />
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b0d10">
 
-<style>
-:root{
-  --bg: linear-gradient(180deg,#0d1115,#0a0f14);
-  --card:#11161a;
-  --card2:#0f1621;
-  --text:#eef3f7;
-  --muted:#9fb0c2;
-  --accent:#1e90ff;
-  --radius:12px;
-  --shadow:0 12px 30px rgba(0,0,0,0.45);
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;padding:18px;display:flex;justify-content:center}
-.app{width:100%;max-width:980px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.brand h1{margin:0;font-size:24px}
-.brand .tag{color:var(--muted);font-size:13px}
-.grid{display:grid;grid-template-columns:380px 1fr;gap:18px}
-@media(max-width:900px){ .grid{grid-template-columns:1fr} }
+<html lang="id">  
+<head>  
+  <meta charset="utf-8">  
+  <meta name="viewport" content="width=device-width,initial-scale=1">  
+  <title>EL48 — Kompres Foto</title>  
+  <link rel="icon" type="image/x-icon" href="favicon.ico">  
+  <style>  
+    :root{ --bg1:#0b0d10; --bg2:#101722; --panel:#0f1621; --text:#f1f6ff; --muted:#a4b3c6; --border:rgba(255,255,255,.12); --brand:#e60012; }  
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text)}  
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 14px 40px}  
+    a{color:#fff}  
+    header{display:flex;align-items:center;gap:10px}  
+    .logo{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),#b8000e);font-weight:800}  
+    .panel{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,#101827ee,#0e1520ee);padding:12px}  
+    .row{display:flex;gap:12px;flex-wrap:wrap}  
+    .col{flex:1;min-width:280px}  
+    .drop{display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:14px;height:170px;background:#0e1420;color:#cfe0f2;text-align:center;padding:10px;cursor:pointer}  
+    .drop input{display:none}  
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}  
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.02))}  
+    .card h3{margin:0 0 6px 0;font-size:14px;color:#e9f1fb}  
+    .btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;transition:.2s}  
+    .btn.primary{background:#fff;color:#0b0d10}  
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:#f1f6ff}  
+    .preview{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b0d10}  
+    .preview header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:#cfe0f2}  
+    canvas{display:block;width:100%;height:auto;background:#0b0d10}  
+    footer{margin-top:16px;text-align:center;color:#9db0c7;font-size:12px}  
+    .back{margin-top:8px;display:inline-block}  
+  </style>  
+</head>  
+<body>  
+  <div class="wrap">  
+    <header>  
+      <div class="logo">EL48</div>  
+      <div>  
+        <h1 style="margin:0">Kompres Foto</h1>  
+        <div style="color:#a4b3c6;font-size:13px;margin-top:2px">Perkecil ukuran, jaga kualitas. 100% di browser.</div>  
+        <a href="index.html" class="back">← Kembali ke Landing</a>  
+      </div>  
+    </header>  <section class="panel">  
+  <div class="row">  
+    <div class="col">  
+      <label class="drop" id="dropC">  
+        <input id="fileC" type="file" accept="image/*">  
+        <div><strong>Ketuk untuk pilih</strong> atau tarik foto ke sini (JPG/PNG).</div>  
+      </label>  
 
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,0.02)}
-.dropzone{border:2px dashed rgba(255,255,255,0.06);border-radius:10px;padding:26px;text-align:center;cursor:pointer;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-.dropzone.drag{border-color:var(--accent); box-shadow:0 10px 40px rgba(30,144,255,0.06)}
-.dropzone svg{color:var(--accent)}
-.hint{color:var(--muted);font-size:13px;margin-top:6px}
+      <div class="grid">  
+        <div class="card">  
+          <h3>Target</h3>  
+          <div style="display:flex;gap:6px;flex-wrap:wrap">  
+            <select id="targetMode">  
+              <option value="quality" selected>Kualitas (%)</option>  
+              <option value="size">Ukuran target (KB/MB)</option>  
+            </select>  
+            <input id="quality" type="range" min="40" max="95" value="85" class="slider" style="flex:1">  
+          </div>  
+          <div id="sizeBox" style="display:none;gap:6px;align-items:center;margin-top:6px">  
+            <input id="sizeVal" type="number" min="50" value="500" style="width:120px;border-radius:8px;padding:8px;border:1px solid var(--border);background:#0f1a2a;color:#fff">  
+            <select id="sizeUnit">  
+              <option value="KB" selected>KB</option>  
+              <option value="MB">MB</option>  
+            </select>  
+            <span style="font-size:12px;color:#cfe0f2">Contoh: 500 KB atau 1 MB</span>  
+          </div>  
+        </div>  
 
-.controls{margin-top:12px;display:flex;flex-direction:column;gap:10px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.label{min-width:110px;color:var(--muted);font-size:13px}
-.range{flex:1}
-.qval{min-width:36px;text-align:center;color:var(--muted);font-weight:700}
+        <div class="card">  
+          <h3>Resize (Opsional)</h3>  
+          <div style="display:flex;gap:6px;flex-wrap:wrap">  
+            <select id="resizePreset">
 
-.btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:transparent;color:var(--text)}
-.btn.primary{background:var(--accent);color:#fff}
-.btn.ghost{border:1px solid rgba(255,255,255,0.06)}
+  <option value="none" selected>Tanpa resize</option>    <!-- ICON PWA RESIZE -->    <option value="512">512 × 512 (Icon PWA)</option>  
+  <option value="192">192 × 192 (Icon PWA)</option>    <!-- RESIZE BESAR -->    <option value="1080">Lebar maks 1080</option>  
+  <option value="1440">Lebar maks 1440</option>  
+  <option value="2160">Lebar maks 2160</option>  
+</select>  
+                <label style="font-size:12px;color:#cfe0f2">PNG dikonversi ke JPG agar lebih kecil.</label>  
+              </div>  
+            </div>  <div class="card">  
+          <h3>Aksi</h3>  
+          <div style="display:flex;gap:8px;flex-wrap:wrap">  
+            <button id="processC" class="btn primary" style="flex:1">Kompres</button>  
+            <button id="downloadCJpg" class="btn ghost" style="flex:1">Download JPG</button>  
+          </div>  
+        </div>  
+      </div>  
+    </div>  
 
-.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
-@media(max-width:900px){ .gallery{grid-template-columns:repeat(2,1fr)} }
-@media(max-width:420px){ .gallery{grid-template-columns:repeat(1,1fr)} }
-.thumb{border-radius:10px;overflow:hidden;background:var(--card2);box-shadow:0 8px 22px rgba(0,0,0,0.45);position:relative}
-.thumb img{width:100%;height:150px;object-fit:cover;display:block}
-.meta{padding:8px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+    <div class="col">  
+      <div class="preview">  
+        <header><span>Pratinjau</span><span id="infoC"></span></header>  
+        <canvas id="cvC"></canvas>  
+      </div>  
+    </div>  
+  </div>  
+</section>  
 
-.progress{height:6px;background:transparent;border-radius:6px;overflow:hidden;margin:10px 0}
-.progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#60a6ff);transition:width .25s}
+<footer>© 2025 EL48 AI — Semua proses lokal di perangkat kamu.</footer>
 
-.footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
-
-/* modal */
-.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999}
-.modal{background:var(--card);padding:12px;border-radius:12px;max-width:420px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
-.modal h3{margin:0 0 8px 0}
-.cam-video{width:100%;height:300px;background:#000;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.small{font-size:12px;color:var(--muted)}
-</style>
-</head>
-<body>
-<div class="app">
-  <div class="header">
-    <div class="brand">
-      <h1>EL48 — Kompres Foto</h1>
-      <div class="tag">Perkecil ukuran gambar di browser — cepat & privat</div>
-    </div>
-    <div class="small">Bahasa: Indonesia</div>
-  </div>
-
-  <div class="progress card"><i id="progressBar"></i></div>
-
-  <div class="grid">
-    <!-- Left: controls -->
-    <div>
-      <div class="card">
-        <div id="dropzone" class="dropzone" tabindex="0" aria-label="Tarik gambar ke sini atau pilih file">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M8 7l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M21 15v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div style="font-weight:700;margin-top:8px">Seret & jatuhkan gambar di sini</div>
-          <div class="hint">atau <label for="fileInput" style="color:var(--accent);cursor:pointer">pilih file</label> • Maks 20 file</div>
-        </div>
-
-        <input id="fileInput" type="file" accept="image/*" multiple hidden>
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
-
-        <div class="controls">
-          <div class="row">
-            <div class="label">Kualitas</div>
-            <input id="quality" class="range" type="range" min="10" max="95" value="82">
-            <div id="qualityVal" class="qval">82</div>
-          </div>
-
-          <div class="row">
-            <div class="label">Lebar maks (px)</div>
-            <input id="maxWidth" type="number" min="64" max="6000" value="2048" style="width:120px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)">
-            <div class="small">Aspek rasio otomatis</div>
-          </div>
-
-          <div class="row" style="margin-top:8px">
-            <button id="compressBtn" class="btn primary">Kompres</button>
-            <button id="cameraBtn" class="btn">Ambil Foto</button>
-            <button id="downloadZipBtn" class="btn ghost" disabled>Unduh ZIP</button>
-          </div>
-
-          <div class="row" style="margin-top:8px">
-            <button id="clearBtn" class="btn">Bersihkan</button>
-            <button id="privacyBtn" class="btn">Kebijakan Privasi</button>
-          </div>
-
-          <div style="margin-top:10px" class="small">Status: <span id="status">Siap</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: gallery -->
-    <div>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <strong>Pratinjau</strong>
-          <span class="small">Ketuk gambar untuk unduh</span>
-        </div>
-        <div id="gallery" class="gallery" aria-live="polite"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">© EL48 — Semua proses di browser. Tidak ada upload.</div>
-</div>
-
-<!-- Privacy modal -->
-<div id="privacyModal" class="modal-back" aria-hidden="true">
-  <div class="modal">
-    <h3>Kebijakan Privasi</h3>
-    <p>Semua kompresi dilakukan secara lokal di perangkat Anda. Tidak ada gambar yang dikirim ke server. Izin kamera hanya dipakai untuk menangkap foto sementara.</p>
-    <button id="closePrivacy" class="btn primary" style="width:100%;margin-top:12px">Tutup</button>
-  </div>
-</div>
-
-<!-- Camera modal -->
-<div id="camModal" class="modal-back" aria-hidden="true">
-  <div class="modal">
-    <h3>Ambil Foto</h3>
-    <div class="cam-video"><video id="camVideo" autoplay playsinline></video></div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button id="camCapture" class="btn primary" style="flex:1">Tangkap</button>
-      <button id="camCancel" class="btn" style="flex:1">Batal</button>
-    </div>
-  </div>
-</div>
-
-<!-- JSZip CDN -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
-
-<script>
-/* ========== Elements ========== */
-const fileInput = document.getElementById('fileInput');
-const cameraInput = document.getElementById('cameraInput');
-const cameraBtn = document.getElementById('cameraBtn');
-const compressBtn = document.getElementById('compressBtn');
-const downloadZipBtn = document.getElementById('downloadZipBtn');
-const clearBtn = document.getElementById('clearBtn');
-const privacyBtn = document.getElementById('privacyBtn');
-const dropzone = document.getElementById('dropzone');
-
-const qualityInput = document.getElementById('quality');
-const qualityVal = document.getElementById('qualityVal');
-const maxWidthInput = document.getElementById('maxWidth');
-
-const gallery = document.getElementById('gallery');
-const statusEl = document.getElementById('status');
-const progressBar = document.getElementById('progressBar');
-
-const privacyModal = document.getElementById('privacyModal');
-const closePrivacy = document.getElementById('closePrivacy');
-
-const camModal = document.getElementById('camModal');
-const camVideo = document.getElementById('camVideo');
-const camCapture = document.getElementById('camCapture');
-const camCancel = document.getElementById('camCancel');
-
-let files = [];
-let compressedFiles = [];
-let camStream = null;
-
-function setStatus(t){ statusEl.textContent = t; }
-
-/* ========== UI init ========== */
-qualityInput.addEventListener('input', ()=> qualityVal.textContent = qualityInput.value);
-
-/* ========== Drag/drop ========== */
-dropzone.addEventListener('click', ()=> fileInput.click());
-dropzone.addEventListener('dragover', e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
-dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
-dropzone.addEventListener('drop', e=>{ e.preventDefault(); dropzone.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
-
-fileInput.addEventListener('change', e=> { if(e.target.files) handleFiles(e.target.files); });
-
-/* ========== handle files ========== */
-function handleFiles(list){
-  const arr = Array.from(list).filter(f=> f.type && f.type.startsWith('image/')).slice(0, 20 - files.length);
-  if(arr.length === 0) return;
-  for(const f of arr){ files.push(f); renderThumb(f); }
-  setStatus(files.length + ' file siap');
-}
-
-/* ========== render thumb ========== */
-function renderThumb(file){
-  const div = document.createElement('div'); div.className = 'thumb';
-  const img = document.createElement('img'); img.alt = file.name;
-  const meta = document.createElement('div'); meta.className = 'meta';
-  const left = document.createElement('div'); left.textContent = file.name;
-  const right = document.createElement('div'); right.textContent = Math.round(file.size/1024) + ' KB';
-  meta.appendChild(left); meta.appendChild(right);
-  div.appendChild(img); div.appendChild(meta);
-  gallery.prepend(div);
-
-  const reader = new FileReader();
-  reader.onload = ()=> img.src = reader.result;
-  reader.readAsDataURL(file);
-
-  img.addEventListener('click', ()=> {
-    const a = document.createElement('a'); a.href = img.src; a.download = file.name; a.click();
-  });
-}
-
-/* ========== clear ========== */
-clearBtn.addEventListener('click', ()=> {
-  files = []; compressedFiles = []; gallery.innerHTML=''; downloadZipBtn.disabled=true; setStatus('bersih'); document.getElementById('progressBar').style.width = '0%';
-});
-
-/* ========== compress flow ========== */
-compressBtn.addEventListener('click', async ()=>{
-  if(files.length === 0){ alert('Pilih file terlebih dahulu.'); return; }
-  compressBtn.disabled = true; setStatus('Mengompres...');
-  compressedFiles = [];
-  const total = files.length;
-  for(let i=0;i<total;i++){
-    const f = files[i];
-    setStatus(`Mengompres ${i+1}/${total} ...`);
-    const blob = await compressImageFile(f, { quality: Number(qualityInput.value)/100, maxWidth: Number(maxWidthInput.value) });
-    const ext = supportsWebP()?'.webp':'.jpg';
-    const base = f.name.replace(/\.[^/.]+$/, "");
-    const name = base + ext;
-    compressedFiles.push({name, blob});
-    // preview compressed (small)
-    const tb = document.createElement('div'); tb.className='thumb';
-    const im = document.createElement('img'); im.src = URL.createObjectURL(blob);
-    const m = document.createElement('div'); m.className='meta'; m.textContent = name + ' • ' + Math.round(blob.size/1024) + ' KB';
-    tb.appendChild(im); tb.appendChild(m);
-    gallery.prepend(tb);
-    // update progress bar
-    const percent = Math.round(((i+1)/total)*100);
-    document.getElementById('progressBar').style.width = percent + '%';
-    await sleep(80);
-  }
-  setStatus(`Selesai — ${compressedFiles.length} file`);
-  downloadZipBtn.disabled = false;
-  compressBtn.disabled = false;
-});
-
-/* ========== download zip ========== */
-downloadZipBtn.addEventListener('click', async ()=>{
-  if(!compressedFiles.length) return;
-  setStatus('Membuat ZIP...');
-  const zip = new JSZip();
-  for(const it of compressedFiles) zip.file(it.name, it.blob);
-  const content = await zip.generateAsync({type:'blob'}, (meta)=> {
-    document.getElementById('progressBar').style.width = Math.round(meta.percent) + '%';
-  });
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a'); a.href = url; a.download = 'compressed_images.zip'; a.click();
-  URL.revokeObjectURL(url);
-  setStatus('ZIP siap — terunduh');
-});
-
-/* ========== compress helper ========== */
-async function compressImageFile(file, opts){
-  const img = await loadImageFromFile(file);
-  const {width, height} = calcSize(img.width, img.height, opts.maxWidth);
-  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-  const ctx = canvas.getContext('2d'); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, 0, 0, width, height);
-  const mime = supportsWebP()? 'image/webp' : 'image/jpeg';
-  return await new Promise((res)=> canvas.toBlob(res, mime, opts.quality));
-}
-function supportsWebP(){ try{ const c = document.createElement('canvas'); return c.toDataURL('image/webp').indexOf('webp') !== -1; }catch(e){ return false; } }
-function loadImageFromFile(file){ return new Promise((res, rej)=>{ const reader = new FileReader(); reader.onload = ()=>{ const img = new Image(); img.onload = ()=> res(img); img.onerror = rej; img.src = reader.result; }; reader.onerror = rej; reader.readAsDataURL(file); }); }
-function calcSize(w,h,maxW){ if(!maxW || w <= maxW) return {width:w, height:h}; const ratio = maxW / w; return {width: Math.round(w*ratio), height: Math.round(h*ratio)}; }
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-/* ========== camera ========== */
-cameraBtn.addEventListener('click', async ()=>{
-  cameraInput.click();
-  const changed = await waitForInputChange(cameraInput, 1500);
-  if(changed) return;
-  openLiveCameraModal();
-});
-cameraInput.addEventListener('change', e=> { if(e.target.files && e.target.files.length) handleFiles(e.target.files); });
-
-function waitForInputChange(inp, timeout=1200){
-  return new Promise(resolve=>{
-    let done=false;
-    const onChange = ()=>{ if(done) return; done=true; cleanup(); resolve(true); };
-    const cleanup = ()=>{ inp.removeEventListener('change', onChange); clearTimeout(t); };
-    inp.addEventListener('change', onChange);
-    const t = setTimeout(()=>{ if(done) return; done=true; cleanup(); resolve(false); }, timeout);
-  });
-}
-
-function openLiveCameraModal(){
-  camModal.style.display = 'flex';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false})
-    .then(s=>{
-      camStream = s;
-      camVideo.srcObject = s;
-    }).catch(e=>{
-      alert('Tidak dapat mengakses kamera: ' + (e.message || e));
-      camModal.style.display = 'none';
-    });
-}
-camCancel.addEventListener('click', closeCamera);
-function closeCamera(){ if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } camModal.style.display='none'; }
-camCapture.addEventListener('click', ()=>{
-  if(!camVideo.srcObject) return;
-  const canvas = document.createElement('canvas'); canvas.width = camVideo.videoWidth; canvas.height = camVideo.videoHeight;
-  const ctx = canvas.getContext('2d'); ctx.drawImage(camVideo, 0, 0);
-  canvas.toBlob(blob=>{
-    const file = new File([blob], 'camera_' + Date.now() + '.jpg', {type: blob.type});
-    handleFiles([file]); closeCamera();
-  }, 'image/jpeg', 0.92);
-});
-
-/* ========== privacy modal ========== */
-privacyBtn.addEventListener('click', ()=> { privacyModal.style.display='flex'; });
-closePrivacy.addEventListener('click', ()=> { privacyModal.style.display='none'; });
-
-/* ========== shortcuts ========== */
-window.addEventListener('keydown', e=> { if(e.key==='c' || e.key==='C') clearBtn.click(); if(e.key==='k' || e.key==='K') compressBtn.click(); });
-
-/* ========== register service worker (if ada) ========== */
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-}
-
-/* ========== init ========== */
-setStatus('Siap');
-</script>
-</body>
-</html>
+  </div>  <script>  
+(function(){  
+  const $ = s => document.querySelector(s);  
+  const fileC = $('#fileC'), dropC = $('#dropC'), cvC = $('#cvC'), infoC = $('#infoC');  
+  const targetMode = $('#targetMode'), quality = $('#quality');  
+  const sizeBox = $('#sizeBox'), sizeVal = $('#sizeVal'), sizeUnit = $('#sizeUnit');  
+  const resizePreset = $('#resizePreset'); const processC = $('#processC'), downloadCJpg = $('#downloadCJpg');  
+  let imgC = null, outC = null;  
+  
+  targetMode.addEventListener('change', ()=>{  
+    if(targetMode.value==='size'){ sizeBox.style.display='flex'; quality.disabled = true; }  
+    else { sizeBox.style.display='none'; quality.disabled = false; }  
+  });  
+  
+  function loadFileC(file){  
+    const url = URL.createObjectURL(file);  
+    const im = new Image();  
+    im.onload = ()=>{ imgC = im; URL.revokeObjectURL(url); drawC(); };  
+    im.src = url;  
+  }  
+  
+  function drawC(){  
+    if(!imgC){ infoC.textContent=''; return; }  
+    const srcW = imgC.naturalWidth, srcH = imgC.naturalHeight;  
+    let targetW = srcW, targetH = srcH;  
+    const maxW = parseInt(resizePreset.value,10);  
+    if(!isNaN(maxW) && maxW>0 && srcW>maxW){  
+      targetW = maxW; targetH = Math.round(srcH * (maxW/srcW));  
+    }  
+    const tmp = document.createElement('canvas'); tmp.width = targetW; tmp.height = targetH;  
+    const tctx = tmp.getContext('2d'); tctx.imageSmoothingEnabled=true; tctx.imageSmoothingQuality='high';  
+    tctx.drawImage(imgC, 0, 0, targetW, targetH);  
+  
+    let q = (parseInt(quality.value,10)||85)/100;  
+    let dataUrl = tmp.toDataURL('image/jpeg', q);  
+    if(targetMode.value==='size'){  
+      const bytesTarget = (parseInt(sizeVal.value,10)||500) * (sizeUnit.value==='MB' ? 1024*1024 : 1024);  
+      let lower=0.4, upper=0.95; q = Math.min(Math.max(q, lower), upper);  
+      for(let i=0;i<8;i++){  
+        dataUrl = tmp.toDataURL('image/jpeg', q);  
+        const curBytes = Math.ceil((dataUrl.length - 'data:image/jpeg;base64,'.length) * 3/4);  
+        if(curBytes>bytesTarget) { upper = q; q = (lower+q)/2; }  
+        else { lower = q; q = (q+upper)/2; }  
+      }  
+    }  
+  
+    outC = new Image(); outC.onload = ()=>{  
+      cvC.width = outC.naturalWidth; cvC.height = outC.naturalHeight;  
+      const cctx = cvC.getContext('2d'); cctx.imageSmoothingEnabled=true; cctx.imageSmoothingQuality='high';  
+      cctx.drawImage(outC, 0, 0);  
+      const sizeKB = Math.ceil((dataUrl.length - 'data:image/jpeg;base64,'.length) * 3/4 / 1024);  
+      infoC.textContent = `${srcW}×${srcH} → ${cvC.width}×${cvC.height} • ~${sizeKB} KB`;  
+    }; outC.src = dataUrl;  
+  }  
+  
+  dropC.addEventListener('click', ()=> fileC.click());  
+  dropC.addEventListener('dragover', e=>{ e.preventDefault(); });  
+  dropC.addEventListener('drop', e=>{ e.preventDefault(); const f=e.dataTransfer.files?.[0]; if(f) loadFileC(f); });  
+  fileC.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) loadFileC(f); });  
+  
+  [targetMode, quality, sizeVal, sizeUnit, resizePreset].forEach(el=> el.addEventListener('input', ()=>{ if(imgC) drawC(); }));  
+  processC.addEventListener('click', drawC);  
+  downloadCJpg.addEventListener('click', ()=>{  
+    if(!cvC.width){ alert('Belum ada hasil. Tekan Kompres.'); return; }  
+    const a = document.createElement('a');  
+    a.href = cvC.toDataURL('image/jpeg', 0.95);  
+    a.download = 'EL48-compressed.jpg';  
+    a.click();  
+  });  
+})();  
+</script>  </body>  
+</html>  
